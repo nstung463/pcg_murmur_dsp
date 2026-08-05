@@ -1,0 +1,115 @@
+?? ÁN CU?I K?
+DIGITAL SIGNAL AND IMAGE PROCESSING (DSP501)
+Robust Phonocardiogram Murmur Detection
+with Digital Signal Processing
+Báo cáo nghiên c?u và tri?n khai h? th?ng DSP/ML trên tín hi?u tim PCG
+Thông tin	N?i dung
+Môn h?c	Digital Signal and Image Processing (DSP501)
+D? li?u	CirCor DigiScope / PhysioNet Challenge 2022
+Ph?m vi	Audit d? li?u, DSP ablation, robustness và FE demo
+Sinh viên	____________________________
+Ngày	05/08/2026
+
+L?u ý: h? th?ng là research prototype ph?c v? m?c tiêu h?c t?p và phân tích DSP; không ph?i thi?t b? ch?n ?oán lâm sàng.
+
+Tóm t?t
+Báo cáo trình bày m?t pipeline x? lý và phân lo?i tín hi?u phonocardiogram (PCG) nh?m nghiên c?u ?nh h??ng c?a các kh?i DSP ??n bài toán phát hi?n heart murmur. H? th?ng th?c hi?n ??c WAV, chuy?n mono, chu?n hóa, resampling, quantization, l?c d?i thông, chia ?o?n và trích xu?t các bi?u di?n th?i gian–t?n s? g?m th?ng kê th?i gian, Welch PSD, FFT, STFT và MFCC. Các vector ??c tr?ng ???c g?p theo b?nh nhân ?? tránh rò r? d? li?u gi?a các t?p train/test.
+Trên subset t?i tr?c ti?p g?m 100 b?nh nhân và 325 b?n ghi h?p l?, nghiên c?u ch?y matrix 24 c?u hình (3 lo?i filter × 4 nhóm feature × SVM/MLP) và 10 thí nghi?m robustness cho sampling rate, quantization và noise. C?u hình t?t nh?t là SVM v?i Butterworth ho?c FIR và hybrid features, ??t accuracy 0.933, balanced accuracy 0.950 và macro-F1 0.928 trên t?p test 15 b?nh nhân. K?t qu? cho th?y quantization 8-bit và pink/impulse noise làm suy gi?m hi?u n?ng rõ h?n thay ??i sampling rate trong ph?m vi 1–4 kHz.
+T? khóa: phonocardiogram, PCG, heart murmur, sampling, quantization, band-pass filter, FFT, PSD, STFT, SVM.
+M?c l?c
+
+
+
+1. Gi?i thi?u
+1.1. B?i c?nh bài toán
+Phonocardiogram là tín hi?u âm thanh thu ???c khi nghe tim b?ng c?m bi?n ho?c ?ng nghe ?i?n t?. Murmur có th? bi?u hi?n d??i d?ng n?ng l??ng b?t th??ng ho?c thay ??i c?u trúc ph? trong chu k? tim. Do ?ó, PCG là m?t bài toán phù h?p ?? minh h?a các khái ni?m DSP: l?y m?u, l??ng t? hóa, l?c, phân tích ph?, bi?u di?n th?i gian–t?n s? và ?ánh giá ?? b?n v?i nhi?u.
+1.2. Câu h?i nghiên c?u
+    • Front-end DSP nào ??t cân b?ng t?t gi?a hi?u n?ng và ?? ph?c t?p cho phân lo?i Absent/Present?
+    • Sampling rate và quantization ?nh h??ng nh? th? nào ??n ??c tr?ng PCG?
+    • Các d?ng nhi?u white, pink và impulse làm thay ??i macro-F1 ra sao?
+    • Patient-wise split có th? gi? nguyên tính tái l?p và tránh leakage nh? th? nào?
+1.3. ?óng góp c?a ?? án
+    • Xây d?ng pipeline DSP có c?u hình hóa, tái l?p và dùng chung cho training, CLI inference và Streamlit FE.
+    • So sánh ??nh l??ng filter, feature representation và classifier b?ng macro-F1, balanced accuracy và confusion matrix.
+    • B? sung robustness matrix cho sampling, bit depth và noise.
+    • T?o demo tr?c quan cho waveform, FFT, PSD, STFT và xác su?t phân lo?i.
+2. D? li?u và thi?t k? thí nghi?m
+2.1. Dataset
+Ngu?n d? li?u là CirCor DigiScope ???c công b? trên PhysioNet. M?i b?nh nhân có file metadata .txt, m?t ho?c nhi?u recording WAV t?i các v? trí nghe tim, nhãn murmur và tùy ch?n file segmentation. Trong tri?n khai này, metadata ???c parse theo patient_id; các recording cùng b?nh nhân luôn ???c gi? chung m?t partition.
+PhysioNet CirCor Heart Sound Dataset
+??c tính	Giá tr?
+B?nh nhân t?i ???c	100
+Recording WAV h?p l?	325
+Absent / Present / Unknown recordings	199 / 109 / 17
+B?nh nhân Absent / Present / Unknown	60 / 32 / 8
+Sample rate ngu?n	4 kHz (325/325)
+Th?i l??ng	6.592–46.496 s
+Invalid/missing	0
+B?ng 1. Th?ng kê audit subset 100 b?nh nhân.
+Archive ZIP toàn b? b? throttled trong môi tr??ng th?c thi, nên nghiên c?u s? d?ng patient-wise direct-download subset. ?ây là gi?i h?n v? ph?m vi d? li?u và ???c gi? rõ trong ph?n k?t lu?n; các metric không ???c trình bày nh? k?t qu? trên toàn b? cohort.
+2.2. Chia d? li?u
+Sau khi lo?i Unknown kh?i supervised learning, 92 b?nh nhân có nhãn ???c chia stratified theo patient_id v?i seed 42: 64 train, 13 validation và 15 test. Các location AV/MV/PV/TV c?a cùng b?nh nhân không bao gi? b? tách sang partition khác.
+3. C? s? DSP và pipeline
+3.1. Chu?i x? lý
+V?i m?i WAV, h? th?ng th?c hi?n: (1) ??c PCM và chuy?n mono; (2) resample v? target_fs; (3) l??ng t? hóa v? bit depth ???c ch?n; (4) thêm noise có ki?m soát n?u b?t robustness test; (5) wavelet denoise tùy ch?n; (6) band-pass filter 25–400 Hz; (7) chia c?a s? 3 giây, hop 1.5 giây; (8) trích xu?t feature; (9) trung bình theo window và recording ?? t?o m?t vector patient-level.
+3.2. Feature representation
+Nhóm	Thành ph?n
+Stats	Mean, standard deviation, RMS, skewness, kurtosis
+PSD	Welch band-power ratios và spectral entropy
+FFT	Ba peak frequency và magnitude chu?n hóa
+STFT	Mean, std và quantiles c?a log magnitude spectrogram
+MFCC	Mean/std c?a 13 MFCC
+Hybrid	K?t h?p toàn b? nhóm trên
+B?ng 2. Các bi?u di?n ???c dùng trong matrix.
+3.3. Classifier
+Hai baseline ???c so sánh: SVM RBF v?i StandardScaler, probability=True và class_weight=balanced; MLPClassifier v?i hai hidden layers (128, 64), early stopping và seed c? ??nh. SVM ???c ch?n làm model demo vì ?n ??nh h?n MLP trên subset nh? và có xác su?t l?p ?? hi?n th? trong FE.
+4. Matrix th?c nghi?m
+Matrix chính g?m 24 c?u hình: filter ? {none, Butterworth, FIR}, feature ? {PSD, MFCC, STFT, hybrid}, model ? {SVM, MLP}. Metric chính là macro-F1 vì hai l?p không cân b?ng hoàn toàn; balanced accuracy, precision, recall và confusion matrix ???c l?u kèm.
+
+Hình 1. So sánh macro-F1 gi?a các front-end DSP và classifier.
+C?u hình	Accuracy	Balanced acc.	Macro-F1
+SVM + Butterworth + hybrid	0.933	0.950	0.928
+SVM + FIR + hybrid	0.933	0.950	0.928
+SVM + FIR + PSD	0.933	0.900	0.921
+SVM + no filter + PSD	0.933	0.900	0.921
+MLP + no filter + hybrid	0.867	0.800	0.830
+B?ng 3. Các c?u hình có macro-F1 cao nh?t trong 24-run matrix.
+Hybrid không luôn v??t PSD ? m?i classifier, nh?ng SVM hybrid sau Butterworth/FIR ??t balanced accuracy và macro-F1 cao nh?t. MLP có th? ??t k?t qu? khá v?i hybrid không l?c nh?ng dao ??ng l?n h?n gi?a các front-end, phù h?p v?i nh?n ??nh r?ng subset patient-level còn nh?.
+5. Robustness theo sampling, quantization và noise
+?? tách ?nh h??ng c?a t?ng y?u t? DSP, h? th?ng c? ??nh SVM + Butterworth + hybrid và ch?y thêm 10 ?i?u ki?n. M?i ?i?u ki?n dùng cùng patient split, seed và metric v?i matrix chính.
+
+Hình 2. Macro-F1 theo sampling rate, quantization và noise.
+?i?u ki?n	Macro-F1
+Sampling 1 / 2 / 4 kHz	0.928 / 0.928 / 0.928
+Quantization 8 / 12 / 16 bit	0.732 / 0.928 / 0.928
+White noise, 20 dB	0.850
+White noise, 10 dB	0.921
+Pink noise, 10 dB	0.796
+Impulse noise, 10 dB	0.796
+B?ng 4. Robustness matrix.
+Trong subset này, gi?m sampling t? 4 kHz xu?ng 1 kHz không làm thay ??i metric c?a c?u hình ?ã ch?n, cho th?y d?i 25–400 Hz v?n ???c b?o toàn. Ng??c l?i, 8-bit quantization làm gi?m macro-F1 rõ r?t. Pink và impulse noise gây suy gi?m nhi?u h?n white noise ? cùng m?c SNR, g?i ý r?ng nhi?u có c?u trúc ho?c nhi?u xung ?nh h??ng m?nh ??n ph? và transient c?a PCG.
+6. Signal-level analysis và FE demo
+6.1. Signal report
+Signal report minh h?a m?t recording qua raw waveform, processed waveform, FFT, Welch PSD và log-STFT. Các bi?u ?? giúp ng??i xem liên h? tr?c ti?p gi?a thao tác DSP và output model thay vì ch? xem m?t con s? accuracy.
+
+Hình 3. Ví d? signal-level report trên m?t WAV CirCor th?t.
+6.2. Streamlit demo
+FE n?m trong app.py và g?i cùng service inference v?i CLI. Ng??i dùng upload WAV, ch?n sampling rate, quantization, filter và noise preview; sau ?ó xem audio player, waveform, FFT, PSD, STFT, class probabilities và c?u hình DSP ???c dùng. Model m?c ??nh là svm_butterworth_hybrid/model.joblib.
+L?nh ch?y demo:
+.\.venv\Scripts\python.exe -m streamlit run app.py
+Khi trình bày, demo nên ?i theo flow: upload m?t WAV ? gi?i thích raw/filtered waveform ? ch? ra n?ng l??ng trên FFT/PSD ? xem STFT ? ??i 16-bit sang 8-bit ho?c b?t pink noise ? phân tích thay ??i probability. ?ây là minh h?a robustness, không ph?i phép ch?n ?oán.
+7. ?ánh giá và h?n ch?
+    • Test set ch? có 15 b?nh nhân; kho?ng tin c?y và ?? ?n ??nh theo seed ch?a th? ??i di?n cho toàn cohort.
+    • Subset 100 b?nh nhân không ph?i toàn b? CirCor archive; c?n t?i ?? dataset và rerun toàn b? matrix n?u yêu c?u k?t qu? chính th?c.
+    • Segmentation annotations ???c parse và l?u trong manifest nh?ng pipeline hi?n t?i ch?a dùng ?? c?t riêng S1, systole, S2 và diastole.
+    • K?t qu? là proof-of-concept cho môn DSP, không ???c di?n gi?i thành hi?u n?ng ch?n ?oán y khoa.
+    • MLP và SVM là baseline CPU; nghiên c?u ch?a ?ánh giá CNN ho?c calibration trên cohort l?n.
+8. K?t lu?n và h??ng phát tri?n
+?? án ?ã xây d?ng và ki?m ch?ng m?t pipeline PCG end-to-end có th? tái l?p t? d? li?u WAV t?i prediction và FE visualization. Matrix 24-run cho th?y SVM k?t h?p hybrid features sau Butterworth ho?c FIR là l?a ch?n t?t nh?t trong subset hi?n t?i, v?i macro-F1 0.928. Robustness matrix cho th?y h? th?ng ít nh?y v?i sampling 1–4 kHz nh?ng nh?y h?n v?i quantization 8-bit và noise có c?u trúc/xung.
+Các b??c phát tri?n ti?p theo g?m: t?i toàn b? CirCor archive, l?p l?i ?ánh giá v?i nhi?u patient-wise seeds, s? d?ng segmentation ?? t?o cycle-level feature, b? sung confidence interval/calibration, và ch? khi c?n m?i so sánh v?i spectrogram CNN.
+Tài li?u tham kh?o
+[1] PhysioNet, “CirCor DigiScope Dataset,” version 1.0.3. 
+https://physionet.org/content/circor-heart-sound/1.0.3/
+[2] SciPy Signal Processing documentation: resampling, filtering, Welch PSD and STFT.
+[3] Scikit-learn documentation: SVC, MLPClassifier, patient-wise evaluation utilities.
+[4] PyWavelets documentation: discrete wavelet transform and soft-threshold denoising.
