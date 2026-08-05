@@ -89,7 +89,7 @@ cells = [
     cell("code", r'''
     # 4) Audit data: counts, labels, sample rates
     manifest = build_manifest(DATA_DIR, include_unknown=True)
-    rates = [load_wav(path)[0] for path in tqdm(manifest.wav_path.sample(min(100, len(manifest), random_state=42)), desc='checking sample rates')]
+    rates = [load_wav(path)[0] for path in tqdm(manifest.wav_path.sample(min(100, len(manifest)), random_state=42), desc='checking sample rates')]
     print(f"Patients: {manifest.patient_id.nunique():,}")
     print(f"Recordings: {len(manifest):,}")
     print('Sample rates:', pd.Series(rates).value_counts().sort_index().to_dict())
