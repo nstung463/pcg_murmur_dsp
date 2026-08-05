@@ -23,16 +23,22 @@ cells = [
     cell("code", r'''
     # 1) Clone repository và cài package của project
     from pathlib import Path
-    import subprocess
+    import subprocess, sys
 
     REPO_URL = 'https://github.com/nstung463/pcg_murmur_dsp.git'
     PROJECT_DIR = Path('/content/pcg_murmur_dsp')
     if not (PROJECT_DIR / 'src' / 'pcg_dsp').exists():
         subprocess.run(['git', 'clone', REPO_URL, str(PROJECT_DIR)], check=True)
 
-    %pip -q install -e /content/pcg_murmur_dsp
-    %pip -q install matplotlib seaborn tqdm requests awscli
+    SRC_DIR = PROJECT_DIR / 'src'
+    if not (SRC_DIR / 'pcg_dsp').exists():
+        raise RuntimeError(f'Không tìm thấy source package: {SRC_DIR / "pcg_dsp"}')
+    if str(SRC_DIR) not in sys.path:
+        sys.path.insert(0, str(SRC_DIR))
+    subprocess.run([sys.executable, '-m', 'pip', 'install', '-q', '-e', str(PROJECT_DIR)], check=True)
+    subprocess.run([sys.executable, '-m', 'pip', 'install', '-q', 'matplotlib', 'seaborn', 'tqdm', 'requests', 'awscli'], check=True)
     print('Imported project from:', PROJECT_DIR)
+    print('Python source path:', SRC_DIR)
     '''),
     cell("code", r'''
     # 2) Download full CirCor training data
@@ -60,7 +66,9 @@ cells = [
     '''),
     cell("code", r'''
     # 3) Import đúng các module của project
-    import copy, json, yaml, joblib
+    import copy, json, yaml, joblib, sys
+    if str(PROJECT_DIR / 'src') not in sys.path:
+        sys.path.insert(0, str(PROJECT_DIR / 'src'))
     import numpy as np
     import pandas as pd
     import matplotlib.pyplot as plt
