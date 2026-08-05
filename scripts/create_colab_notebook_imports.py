@@ -77,8 +77,8 @@ cells = [
     from IPython.display import display
 
     from pcg_dsp.io import build_manifest, iter_patients, load_wav
-    from pcg_dsp.dsp import apply_filter, design_filter, stft_matrix, quantize, resample_signal
-    from pcg_dsp.pipeline import make_patient_table, train_evaluate
+    from pcg_dsp.dsp import apply_filter, design_filter, stft_matrix, quantize, resample_signal, segment_signal, feature_vector
+    from pcg_dsp.pipeline import make_patient_table, train_evaluate, patient_split
     from pcg_dsp.service import analyze_recording, load_model_bundle
 
     BASE_CONFIG = yaml.safe_load((PROJECT_DIR / 'configs' / 'default.yaml').read_text(encoding='utf-8'))
@@ -221,6 +221,194 @@ cells = [
     - Đây là research prototype, không phải công cụ chẩn đoán lâm sàng.
     '''),
 ]
+
+# Mở rộng notebook thành tutorial: mỗi cell training có mục tiêu, giải thích
+# và visualization để người đọc thấy dữ liệu thay đổi như thế nào.
+tutorial_cells = []
+for index, current in enumerate(cells):
+    if index == 1:
+        tutorial_cells.append(cell("markdown", r'''
+        ## Step 0 — Chuẩn bị code
+
+        Colab clone repository, thêm `src/` vào Python path và cài package `pcg_dsp`. Từ đây notebook gọi trực tiếp code project, không viết lại các hàm DSP.
+        '''))
+    elif index == 2:
+        tutorial_cells.append(cell("markdown", r'''
+        ## Step 1 — Dataset: WAV là một dãy số
+
+        File WAV chứa các samples biên độ theo thời gian. Cell dưới tải metadata và recordings từ CirCor. `FAST_MODE=True` chỉ lấy 100 bệnh nhân để kiểm tra nhanh; `False` chạy full cohort.
+        '''))
+    elif index == 3:
+        tutorial_cells.append(cell("markdown", r'''
+        ## Step 2 — Import đúng code project
+
+        Các module được dùng là `pcg_dsp.io`, `pcg_dsp.dsp`, `pcg_dsp.pipeline` và `pcg_dsp.service`. Đây cũng chính là code được app Streamlit dùng.
+        '''))
+    elif index == 4:
+        tutorial_cells.append(cell("markdown", r'''
+        ## Step 3 — Audit trước khi train
+
+        Ta đếm bệnh nhân, recording, label và sample rate để biết input thật sự có gì trước khi chạy model.
+        '''))
+    elif index == 5:
+        tutorial_cells.append(cell("markdown", r'''
+        ## Step 4 — Nhìn waveform trước và sau DSP
+
+        Một WAV đi qua resample, quantization và band-pass filter. Visualization kế tiếp cho thấy dãy số thay đổi ra sao.
+        '''))
+    elif index == 6:
+        tutorial_cells.append(cell("markdown", r'''
+        ## Step 5 — Từ waveform thành feature và patient vector
+
+        Window 3 giây được biến thành feature vector. Nhiều window được trung bình thành recording vector; nhiều recording được trung bình thành patient vector.
+        '''))
+    elif index == 7:
+        tutorial_cells.append(cell("markdown", r'''
+        ## Step 6 — Đọc kết quả matrix
+
+        Baseline là Butterworth + Hybrid + SVM. Split theo patient để model không nhìn thấy recording khác của cùng một bệnh nhân ở test.
+        '''))
+    elif index == 8:
+        tutorial_cells.append(cell("markdown", r'''
+        ## Step 7 — Robustness
+
+        So sánh 3 filter × 4 feature modes × 2 classifiers để đo ảnh hưởng của từng khối DSP.
+        '''))
+    elif index == 9:
+        tutorial_cells.append(cell("markdown", r'''
+        ## Step 8 — Đọc robustness plot
+
+        Mỗi ô là Macro-F1 trên các test patients. Ô cao hơn là cấu hình tạo ra biểu diễn tín hiệu tốt hơn cho bài toán Absent/Present.
+        '''))
+    elif index == 10:
+        tutorial_cells.append(cell("markdown", r'''
+        ## Step 9 — Robustness
+
+        Cố ý thay sampling rate, bit depth và loại noise để xem chất lượng feature/model suy giảm thế nào.
+        '''))
+    elif index == 11:
+        tutorial_cells.append(cell("markdown", r'''
+        ## Step 10 — Signal report
+
+        Waveform, FFT, PSD và STFT cho thấy cùng một tín hiệu được nhìn ở miền thời gian, miền tần số và time-frequency.
+        '''))
+    elif index == 12:
+        tutorial_cells.append(cell("markdown", r'''
+        ## Step 11 — Inference
+
+        Model tốt nhất được lưu cùng config preprocessing. WAV mới phải đi qua đúng config đó trước khi dự đoán.
+        '''))
+
+    tutorial_cells.append(current)
+
+# Visualization sau audit: raw waveform, sample numbers và filtered waveform.
+tutorial_cells.insert(
+    tutorial_cells.index(cells[4]) + 2,
+    cell("code", r'''
+    # Visualization A — file WAV trước và sau DSP
+    sample_wav = Path(manifest.iloc[0].wav_path)
+    fs_raw, raw = load_wav(sample_wav)
+    fs_target = 1000
+    resampled = resample_signal(raw, fs_raw, fs_target)
+    quantized = quantize(resampled, bits=16)
+    filtered = apply_filter(
+        quantized,
+        design_filter(fs_target, "butterworth", 25, 400, 4, 129),
+    )
+
+    print("File:", sample_wav.name)
+    print("First 12 raw samples:", raw[:12])
+    print("Raw fs:", fs_raw, "Hz | target fs:", fs_target, "Hz")
+    print("Duration:", round(len(raw) / fs_raw, 2), "seconds")
+
+    seconds = min(10, len(raw) / fs_raw)
+    raw_n = int(seconds * fs_raw)
+    filtered_n = int(seconds * fs_target)
+    fig, axes = plt.subplots(2, 1, figsize=(14, 6))
+    axes[0].plot(np.arange(raw_n) / fs_raw, raw[:raw_n], color="#D96445", lw=.7)
+    axes[0].set_title("Raw waveform — dãy số biên độ ban đầu")
+    axes[1].plot(np.arange(filtered_n) / fs_target, filtered[:filtered_n], color="#2B7A78", lw=.7)
+    axes[1].set_title("Sau resample + quantization + Butterworth 25–400 Hz")
+    for ax in axes:
+        ax.set_xlabel("Time (s)")
+        ax.set_ylabel("Amplitude")
+    plt.tight_layout()
+    plt.show()
+    '''),
+)
+
+# Visualization sau baseline: window overlap và feature vector.
+tutorial_cells.insert(
+    tutorial_cells.index(cells[5]) + 2,
+    cell("code", r'''
+    # Visualization B — segmentation 3 giây, hop 1,5 giây
+    segments = segment_signal(
+        filtered,
+        fs_target,
+        seconds=3.0,
+        hop_seconds=1.5,
+    )
+    feature_config = {
+        key: value
+        for key, value in BASE_CONFIG["features"].items()
+        if key != "mode"
+    }
+    hybrid_vector = feature_vector(
+        segments[0],
+        fs_target,
+        mode="hybrid",
+        **feature_config,
+    )
+    print("Samples per window:", 3 * fs_target)
+    print("Windows in sample recording:", len(segments))
+    print("Hybrid feature vector length:", len(hybrid_vector))
+    print("First 10 features:", hybrid_vector[:10])
+
+    view_n = min(len(filtered), 8 * fs_target)
+    t = np.arange(view_n) / fs_target
+    plt.figure(figsize=(14, 3.5))
+    plt.plot(t, filtered[:view_n], color="#17313B", lw=.7)
+    for start in np.arange(0, max(0, view_n / fs_target - 3), 1.5):
+        plt.axvspan(start, start + 3.0, color="#2B7A78", alpha=.10)
+        plt.axvline(start, color="#D96445", ls="--", lw=.8)
+    plt.title("Segmentation — mỗi vùng xanh là một window 3 s")
+    plt.xlabel("Time (s)")
+    plt.ylabel("Amplitude")
+    plt.tight_layout()
+    plt.show()
+    print("Patient table shape:", baseline_table.shape)
+    display(baseline_table.head(3))
+    '''),
+)
+
+# Visualization patient-wise split.
+tutorial_cells.insert(
+    tutorial_cells.index(cells[5]) + 3,
+    cell("code", r'''
+    # Visualization C — split theo patient, không split recording ngẫu nhiên
+    train_ids, validation_ids, test_ids = patient_split(
+        baseline_table,
+        seed=baseline_cfg["split"]["seed"],
+    )
+    split_sizes = pd.Series({
+        "Train patients": len(train_ids),
+        "Validation patients": len(validation_ids),
+        "Test patients": len(test_ids),
+    })
+    display(split_sizes.to_frame("count"))
+    split_sizes.plot.bar(
+        figsize=(6, 3),
+        color=["#2B7A78", "#D96445", "#6A5C8A"],
+        title="Patient-wise split",
+    )
+    plt.ylabel("Number of patients")
+    plt.xticks(rotation=0)
+    plt.tight_layout()
+    plt.show()
+    '''),
+)
+
+cells = tutorial_cells
 
 notebook = {
     "cells": cells,
