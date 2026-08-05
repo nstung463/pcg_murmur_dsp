@@ -1,0 +1,476 @@
+
+===== PAGE 1 =====
+https://aita-lab.github.io
+https://aita-lab.github.io
+SAMPLING OF CONTINUOUS-TIME SIGNALS
+===== PAGE 2 =====
+https://aita-lab.github.io
+https://aita-lab.github.io  
+OBJECTIVES
+•Understand the sampling
+•Know the ways to reconstruct signals
+•Understand to process signals
+2/16/2026 Sampling of continuous-time signals 2
+===== PAGE 3 =====
+https://aita-lab.github.io
+https://aita-lab.github.io  
+SAMPLING OF CONTINUOUS-
+TIME SIGNALS
+1. Periodic Sampling
+2. Frequency-Domain Representation of Sampling
+3. Reconstruction of a Bandlimited Signal from its Samples
+4. Discrete-Time Processing of Continuous-Time signals
+5. Continuous-time processing of discrete-time signals
+2/16/2026 Sampling of continuous-time signals 3
+===== PAGE 4 =====
+https://aita-lab.github.io
+https://aita-lab.github.io  
+PERIODIC SAMPLING
+2/16/2026 Sampling of continuous-time signals 4
+T: 
+sampling 
+period
+===== PAGE 5 =====
+https://aita-lab.github.io
+https://aita-lab.github.io  
+SAMPLING OF CONTINUOUS-
+TIME SIGNALS
+1. Periodic Sampling
+2. Frequency-Domain Representation of Sampling
+3. Reconstruction of a Bandlimited Signal from its Samples
+4. Discrete-Time Processing of Continuous-Time signals
+5. Continuous-time processing of discrete-time signals
+2/16/2026 Sampling of continuous-time signals 5
+===== PAGE 6 =====
+https://aita-lab.github.io
+https://aita-lab.github.io  
+FREQUENCY-DOMAIN 
+REPRESENTATION OF SAMPLING
+2/16/2026 Sampling of continuous-time signals 6
+( ) ( )2
+s
+k
+S j k T
+ 
+
+=−
+ = − 
+T：sample period; fs=1/T:sample rate;Ωs=2π/T:sample 
+rate
+( ) ( )
+
+−=
+−=
+n
+nTtts 
+sjk t
+k
+n
+ae
+
+
+=−
+= 
+1 sjk t
+n
+eT
+
+
+=−
+= 
+/2
+/2
+11 () s
+T jk t
+k T
+a t e dtTT 
++ −
+−
+== 
+2 ( )sjk t F
+sek  ⎯ → − 
+( ) ( )2
+s
+k
+S j k T
+ 
+
+=−
+ = − 
+-T
+1
+t
+T0
+()st
+…
+ …
+
+0
+()Sj 
+…
+ …
+2
+T
+
+2
+T
+
+2
+T
+−
+===== PAGE 7 =====
+https://aita-lab.github.io
+https://aita-lab.github.io  
+•Nyquist Sampling Theorem
+2/16/2026 Sampling of continuous-time signals 7
+◼ Let           be a bandlimited signal with                               
+. 
+◼ Then          is uniquely determined by its samples  
+    
+ ,if 
+◼ The frequency          is commonly referred as the 
+Nyquist frequency.
+◼ The frequency          is called the Nyquist rate.
+( )tXc
+𝑋𝑐 𝑗Ω = 0 𝑓𝑜𝑟 Ω ≥ Ω𝑁
+( )tXc
+  ( ) ,2,1,0, == nnTxnx c
+Ns
+T = 22
+N
+N2
+FREQUENCY-DOMAIN 
+REPRESENTATION OF SAMPLING
+===== PAGE 8 =====
+https://aita-lab.github.io
+https://aita-lab.github.io  
+2/16/2026 Sampling of continuous-time signals 8
+NNs −
+NNs −
+aliasing 
+frequency
+T=
+2/s
+
+2
+frequency spectrum of 
+ideal sample signal
+
+
+−=
+−=
+k
+scs kjXTjX ))((1)(
+No aliasing
+
+
+−=
+=
+−=
+=
+k
+c
+Ts
+j
+TkjXT
+jXeX
+)/)2((1
+|)()( /
+
+
+
+aliasing
+FREQUENCY-DOMAIN 
+REPRESENTATION OF SAMPLING
+===== PAGE 9 =====
+https://aita-lab.github.io
+https://aita-lab.github.io  
+SAMPLING OF CONTINUOUS-
+TIME SIGNALS
+1. Periodic Sampling
+2. Frequency-Domain Representation of Sampling
+3. Reconstruction of a Bandlimited Signal from its Samples
+4. Discrete-Time Processing of Continuous-Time signals
+5. Continuous-time processing of discrete-time signals
+6. Digital processing of Analog signals
+2/16/2026 Sampling of continuous-time signals 9
+===== PAGE 10 =====
+https://aita-lab.github.io
+https://aita-lab.github.io  
+RECONSTRUCTION OF A 
+BANDLIMITED SIGNAL
+( ) ( )
+Tt
+Ttthr
+
+sin=
+2/16/2026 Sampling of continuous-time signals 10
+Gain: T
+( )   ( )
+
+−=
+−=
+n
+rr nTthnxtx
+  ( )
+( )
+sin
+n
+t nT Txn t nT T
+
+
+
+=−
+−= −
+( ) ( ) ( )Tj
+rr eXjHjX =
+===== PAGE 11 =====
+https://aita-lab.github.io
+https://aita-lab.github.io  
+SAMPLING OF CONTINUOUS-
+TIME SIGNALS
+1. Periodic Sampling
+2. Frequency-Domain Representation of Sampling
+3. Reconstruction of a Bandlimited Signal from its Samples
+4. Discrete-Time Processing of Continuous-Time signals
+5. Continuous-time processing of discrete-time signals
+6. Digital processing of Analog signals
+2/16/2026 Sampling of continuous-time signals 11
+===== PAGE 12 =====
+https://aita-lab.github.io
+https://aita-lab.github.io  
+Discrete-Time Processing of Continuous-Time signals
+2/16/2026 Sampling of continuous-time signals 12
+  ( )nTxnx c=
+( )   ( )( )
+( )
+
+−= −
+−=
+n
+r
+TnTt
+TnTtnyty 
+sin
+( )
+12
+jw
+c
+k
+Xe
+wkXjT T T
+
+=−
+=
+  − 
+( ) ( ) ( )
+( )
+
+
+ =
+=
+
+
+otherwise
+TeTY
+eYjHjY
+Tj
+Tj
+rr
+,0
+, 
+===== PAGE 13 =====
+https://aita-lab.github.io
+https://aita-lab.github.io  
+•C/D Converter
+•Output of C/D Converter
+2/16/2026 Sampling of continuous-time signals 13
+  ( )nTxnx c=
+( ) 
+
+−=
+
+
+
+
+
+ 
+
+
+
+ −=
+k
+c
+jw
+T
+k
+T
+wjXTeX 21
+CONTINUOUS-TIME 
+PROCESSING OF DISCRETE-
+TIME SIGNALS
+===== PAGE 14 =====
+https://aita-lab.github.io
+https://aita-lab.github.io  
+DISCRETE-TIME PROCESSING 
+OF CONTINUOUS-TIME 
+SIGNALS
+•D/C Converter
+•Output of D/C Converter
+2/16/2026 Sampling of continuous-time signals 14
+( )   ( )( )
+( )
+
+−= −
+−=
+n
+r
+TnTt
+TnTtnyty 
+sin
+( ) ( ) ( )
+( )
+
+
+ =
+=
+
+
+otherwise
+TeTY
+eYjHjY
+Tj
+Tj
+rr
+,0
+, 
+( ) ,
+0,
+r
+THj Totherwise
+ = 
+
+===== PAGE 15 =====
+https://aita-lab.github.io
+https://aita-lab.github.io  
+SAMPLING OF CONTINUOUS-
+TIME SIGNALS
+1. Periodic Sampling
+2. Frequency-Domain Representation of Sampling
+3. Reconstruction of a Bandlimited Signal from its Samples
+4. Discrete-Time Processing of Continuous-Time signals
+5. Continuous-time processing of discrete-time signals
+2/16/2026 Sampling of continuous-time signals 15
+===== PAGE 16 =====
+https://aita-lab.github.io
+https://aita-lab.github.io  
+CONTINUOUS-TIME 
+PROCESSING OF DISCRETE-
+TIME SIGNALS
+2/16/2026 Sampling of continuous-time signals 16
+
+===== PAGE 17 =====
+https://aita-lab.github.io
+https://aita-lab.github.io  
+SAMPLING OF CONTINUOUS-
+TIME SIGNALS
+1. Periodic Sampling
+2. Frequency-Domain Representation of Sampling
+3. Reconstruction of a Bandlimited Signal from its Samples
+4. Discrete-Time Processing of Continuous-Time signals
+5. Continuous-time processing of discrete-time signals
+6. Digital processing of Analog signals
+2/16/2026 Sampling of continuous-time signals 17
+===== PAGE 18 =====
+https://aita-lab.github.io
+https://aita-lab.github.io  
+Digital processing of Analog signals
+2/16/2026 Sampling of continuous-time signals 18
+
+===== PAGE 19 =====
+https://aita-lab.github.io
+https://aita-lab.github.io  
+2/16/2026 Sampling of continuous-time signals 19
+DIGITAL PROCESSING OF 
+ANALOG SIGNALS
+===== PAGE 20 =====
+https://aita-lab.github.io
+https://aita-lab.github.io  
+2/16/2026 Sampling of continuous-time signals 20
++
+_
+SAR
+b1  b2  b3  . . .    bB
+b1  b2  b3  . . .    bB
+DAC
+MSB
+LSBxQ
+x
+comparator
+DIGITAL PROCESSING OF 
+ANALOG SIGNALS
+===== PAGE 21 =====
+https://aita-lab.github.io
+https://aita-lab.github.io  
+2/16/2026 Sampling of continuous-time signals 21
+DIGITAL PROCESSING OF 
+ANALOG SIGNALS
+===== PAGE 22 =====
+https://aita-lab.github.io
+https://aita-lab.github.io  
+2/16/2026 Sampling of continuous-time signals 22
+DIGITAL PROCESSING OF 
+ANALOG SIGNALS
+===== PAGE 23 =====
+https://aita-lab.github.io
+https://aita-lab.github.io  
+•Unipolar natural binary
+•Bipolar offset binary
+•Bipolar 2’s complement
+2/16/2026 Sampling of continuous-time signals 23
+12
+12( 2 2 ... 2 ) B
+Q m Bx X b b b − − −= + + +
+12
+12( 2 2 ... 2 0.5) B
+Q m Bx X b b b − − −= + + + −
+12
+12( 2 2 ... 2 0.5) B
+Q m Bx X b b b − − −= + + + −
+DIGITAL PROCESSING OF 
+ANALOG SIGNALS
+===== PAGE 24 =====
+https://aita-lab.github.io
+https://aita-lab.github.io  
+DIGITAL PROCESSING OF 
+ANALOG SIGNALS
+•Example: Quantized x = 3.5 by performing Unipolar 
+natural binary
+ 
+2/16/2026 Sampling of continuous-time signals 24
+Test b1b2b3b4 xQ C = u(x – xQ)
+b1 1000 5,000 0
+b2 0100 2,500 1
+b3 0110 3,750 0
+b4 0101 3,125 1
+0101 3,125
+=> b = [0101]
+===== PAGE 25 =====
+https://aita-lab.github.io
+https://aita-lab.github.io  
+•Quantization Errors
+2/16/2026 Sampling of continuous-time signals 25
+2
+12
+rmsee ==
+max /2e =
+mXSNR = 
+Signal to noise ratio
+Change to dB : 
+6 ( )SNR B dB=
+DIGITAL PROCESSING OF 
+ANALOG SIGNALS
+===== PAGE 26 =====
+https://aita-lab.github.io
+https://aita-lab.github.io  
+THANK YOU
