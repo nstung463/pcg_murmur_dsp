@@ -448,6 +448,15 @@ deep_dive_cells = [
 
     `load_wav()` của project chuyển dữ liệu integer về `float32`, chuẩn hóa gần `[-1, 1]`, và nếu stereo thì lấy trung bình hai channel thành mono.
     '''),
+    cell("markdown", r'''
+    **Lecture note cho cell kế tiếp — Lecture 1, slide 5–7**
+
+    Code bên dưới đang biến tín hiệu analog đã lấy mẫu thành chuỗi rời rạc:
+
+    `x[n] = x_a(nT_s)`, trong đó `T_s` là sampling period và `f_s = 1/T_s`.
+
+    `wavfile.read()` cho ta header + PCM thô; `load_wav()` thực hiện bước chuẩn hóa để chuỗi `x[n]` có thể đi qua các khối DSP tiếp theo. Vì vậy biểu đồ dưới đây là biểu diễn **biên độ theo từng chỉ số n**, không phải ảnh spectrogram.
+    '''),
     cell("code", r'''
     # Deep dive A — xem header và dãy số PCM của một WAV
     from scipy.io import wavfile
@@ -482,6 +491,15 @@ deep_dive_cells = [
 
     Ví dụ: đoạn 3 giây giảm từ 12.000 samples xuống 3.000 samples.
     '''),
+    cell("markdown", r'''
+    **Lecture note cho cell kế tiếp — Lecture 2, slide 4, 6–8**
+
+    Resampling thay đổi `T_s` và `f_s`. Khi giảm sampling rate, điều kiện Nyquist cần kiểm tra là:
+
+    `f_s >= 2 f_max`.
+
+    Ở pipeline này `target_fs = 1000 Hz`, còn band quan tâm kết thúc ở `400 Hz`, nên `1000 >= 2·400`. Hàm `resample_signal()` dùng nội suy/lọc của SciPy để đổi số mẫu nhưng giữ gần nguyên thời lượng. Lecture 2 slide 8 minh họa aliasing nếu điều kiện này bị vi phạm.
+    '''),
     cell("code", r'''
     # Deep dive B — so sánh trước/sau resample
     target_fs = 1000
@@ -511,6 +529,15 @@ deep_dive_cells = [
     - 8-bit: tối đa `2^8` mức.
 
     Bit depth thấp hơn nghĩa là các thay đổi biên độ nhỏ có thể bị làm tròn mất.
+    '''),
+    cell("markdown", r'''
+    **Lecture note cho cell kế tiếp — Lecture 2, slide 23–25**
+
+    Với `B` bit, số mức lý thuyết là `L = 2^B`. Nếu bước lượng tử là `Δ` thì sai số:
+
+    `e[n] = x[n] - x_q[n]`, thường có biên độ lý tưởng không vượt quá `Δ/2`.
+
+    Cell này cố ý chạy hai nhánh `B=16` và `B=8`, sau đó đo số mức thực tế và sai khác trung bình. Đây là **ablation của lượng tử hóa tín hiệu**, liên hệ trực tiếp với phần quantization error ở slide 25; slide 54 Lecture 7 là quantization của hệ số filter, khác với phép thử này.
     '''),
     cell("code", r'''
     # Deep dive C — nhìn sai số quantization 16-bit và 8-bit
@@ -542,6 +569,15 @@ deep_dive_cells = [
 
     Đây vẫn là waveform 1D, chỉ là waveform đã được làm sạch theo miền tần số.
     '''),
+    cell("markdown", r'''
+    **Lecture note cho cell kế tiếp — Lecture 4, slide 4 và 7; Lecture 7, slide 23–32**
+
+    Với hệ LTI:
+
+    `Y(e^{jω}) = H(e^{jω}) X(e^{jω})`.
+
+    Bộ lọc band-pass lý tưởng có `H=1` trong dải `[ω1, ω2]` và `H=0` ngoài dải. Project dùng Butterworth bậc 4 với biên 25–400 Hz; `sosfreqz()` vẽ `|H|` để ta kiểm chứng code đang giữ đúng vùng tần số nào. Butterworth là IIR/SOS implementation, nên phần cấu trúc thực thi liên hệ Lecture 7.
+    '''),
     cell("code", r'''
     # Deep dive D — waveform và đáp ứng tần số của Butterworth
     filter_spec_deep = design_filter(target_fs, "butterworth", 25, 400, 4, 129)
@@ -567,6 +603,15 @@ deep_dive_cells = [
     ## Deep dive E — Layer 4: Chia thành các đoạn nhỏ
 
     Recording dài được chia thành window 3 giây, bước nhảy 1,5 giây. Hai window liên tiếp chồng lên nhau 1,5 giây để không bỏ sót murmur nằm ở ranh giới.
+    '''),
+    cell("markdown", r'''
+    **Lecture note cho cell kế tiếp — liên hệ Lecture 1, slide 5–10 và Lecture 5, slide 32–36**
+
+    Một window hữu hạn có thể viết:
+
+    `x_m[n] = x[n + mH] w[n]`,
+
+    trong đó `N = seconds·f_s = 3000` samples và `H = hop_seconds·f_s = 1500` samples. Vì `H < N`, hai window chồng nhau 50%. Đây là cách đưa recording dài về các sequence hữu hạn để DFT/feature extraction xử lý được.
     '''),
     cell("code", r'''
     # Deep dive E — visualize các window 3 s / hop 1,5 s
@@ -594,6 +639,15 @@ deep_dive_cells = [
     - MFCC: mô tả hình dạng phổ âm thanh.
 
     Kết quả cuối cùng là một vector số nhỏ hơn rất nhiều so với 3.000 samples raw.
+    '''),
+    cell("markdown", r'''
+    **Lecture note cho cell kế tiếp — Lecture 5, slide 35–36; Lecture 6, slide 4–14**
+
+    FFT magnitude trong code là phép tính nhanh của DFT:
+
+    `X[k] = Σ(n=0..N-1) x[n] exp(-j 2πkn/N)`.
+
+    `np.fft.rfft()` chỉ giữ nửa phổ dương của tín hiệu thực. Lecture 6 giải thích phép tách even/odd và độ phức tạp `O(N log₂N)`; project gọi thư viện FFT chuẩn, không tự viết butterfly. PSD dùng `signal.welch()` để ước lượng năng lượng phổ; STFT dùng nhiều DFT trên các frame; MFCC là feature mở rộng audio, không phải công thức xuất hiện trong 7 PDF core.
     '''),
     cell("code", r'''
     # Deep dive F — xem độ dài từng feature mode và các biểu diễn trung gian
