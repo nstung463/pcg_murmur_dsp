@@ -109,7 +109,7 @@ const doc = new Document({
 
       heading('Tóm tắt', HeadingLevel.HEADING_1),
       para('Báo cáo trình bày một pipeline xử lý và phân loại tín hiệu phonocardiogram (PCG) nhằm nghiên cứu ảnh hưởng của các khối DSP đến bài toán phát hiện heart murmur. Hệ thống thực hiện đọc WAV, chuyển mono, chuẩn hóa, resampling, quantization, lọc dải thông, chia đoạn và trích xuất các biểu diễn thời gian–tần số gồm thống kê thời gian, Welch PSD, FFT, STFT và MFCC. Các vector đặc trưng được gộp theo bệnh nhân để tránh rò rỉ dữ liệu giữa các tập train/test.'),
-      para('Bản chính sử dụng toàn bộ public training release: 942 bệnh nhân và 3.163 WAV, trong đó 874 bệnh nhân có nhãn Absent/Present được dùng cho supervised learning. Patient-wise split gồm 611 train, 131 validation và 132 test. Benchmark cố định SVM + Butterworth + hybrid và thay đổi sampling/quantization cho thấy 1 kHz + 16-bit là baseline nhanh nhất (85,8 s; macro-F1 0,615), còn 4 kHz + không quantization thêm cho macro-F1 cao nhất trong split này (0,637) nhưng tốn 126,9 s. Matrix 24 cấu hình và robustness noise trên subset 100 patient được giữ như pilot để minh họa filter, feature, classifier và nhiễu; không nên xem các metric pilot là kết quả toàn cohort.'),
+      para('Bản chính sử dụng toàn bộ public training release: 942 bệnh nhân và 3.163 WAV, trong đó 874 bệnh nhân có nhãn Absent/Present được dùng cho supervised learning. Patient-wise split gồm 611 train, 131 validation và 132 test. Full matrix 24 cấu hình cho thấy MLP + không filter + MFCC đạt macro-F1 cao nhất 0,693, còn SVM + không filter + hybrid có balanced accuracy cao nhất 0,664 trong cùng split. Benchmark preprocess cố định SVM + Butterworth + hybrid cho thấy 1 kHz + 16-bit là baseline nhanh nhất (85,8 s; macro-F1 0,615), còn 4 kHz + không quantization thêm đạt macro-F1 0,637 nhưng tốn 126,9 s. Matrix và robustness trên subset 100 patient được giữ như pilot để minh họa xu hướng khác biệt với kết quả full cohort.'),
       para('Từ khóa: phonocardiogram, PCG, heart murmur, sampling, quantization, band-pass filter, FFT, PSD, STFT, SVM.'),
 
       heading('Mục lục', HeadingLevel.HEADING_1),
@@ -118,6 +118,7 @@ const doc = new Document({
       para('3. Cơ sở DSP và pipeline — 4'),
       para('4. Matrix thực nghiệm — 4'),
       para('4.1. Full-cohort benchmark sampling/quantization — 5'),
+      para('4.2. Full-data matrix model/filter/feature — 6'),
       para('5. Robustness theo sampling, quantization và noise — 5'),
       para('6. Signal-level analysis và FE demo — 6'),
       para('7. Đánh giá và hạn chế — 7'),
@@ -173,6 +174,13 @@ const doc = new Document({
       caption('Bảng 4. Benchmark toàn bộ 874 bệnh nhân có nhãn; test = 132 bệnh nhân.'),
       para('Kết luận thực nghiệm: 4 kHz giữ thêm thông tin nhưng tăng thời gian khoảng 43–48% so với 1 kHz; lợi ích Macro-F1 chỉ tăng nhẹ (0,615 → 0,630–0,637) trên một split. Bỏ quantization thêm đạt điểm cao nhất trong benchmark này, nhưng chênh lệch nhỏ và chưa đủ để khẳng định ưu thế thống kê. Vì vậy FE cho phép chọn 1 kHz + 16-bit để demo nhanh hoặc 4 kHz + none để tái hiện tín hiệu gốc.'),
 
+      new Paragraph({ children: [new PageBreak()] }),
+      heading('4.2. Full-data matrix: model, filter và feature', HeadingLevel.HEADING_2),
+      para('Matrix đầy đủ giữ target fs = 1 kHz, quantization = 16-bit, seed 42 và patient-wise split; chỉ thay 3 loại filter × 4 nhóm feature × 2 classifier. Kết quả dưới đây là các cấu hình đứng đầu theo Macro-F1; toàn bộ 24 dòng được lưu trong artifacts/full_matrix_24/full_matrix.csv.'),
+      table(['Model', 'Filter', 'Feature', 'Accuracy', 'Balanced acc.', 'Macro-F1'], [['MLP', 'None', 'MFCC', '0,848', '0,657', '0,693'], ['MLP', 'None', 'Hybrid', '0,841', '0,625', '0,654'], ['SVM', 'None', 'Hybrid', '0,750', '0,664', '0,648'], ['SVM', 'FIR', 'Hybrid', '0,765', '0,646', '0,644'], ['SVM', 'None', 'MFCC', '0,742', '0,659', '0,642'], ['SVM', 'FIR', 'MFCC', '0,758', '0,628', '0,628'], ['SVM', 'Butterworth', 'Hybrid', '0,742', '0,618', '0,615']], [1500, 1700, 1900, 1300, 1700, 1300]),
+      caption('Bảng 5. Top full-data configurations theo Macro-F1; test = 132 bệnh nhân.'),
+      para('Không filter cho kết quả tốt hơn trong split này; MFCC giúp MLP đạt Macro-F1 cao nhất, trong khi SVM + none + hybrid có balanced accuracy cao nhất. Tuy nhiên confusion matrix của MLP + none + MFCC vẫn cho thấy lớp Present khó nhận diện (9/27 đúng), vì vậy không nên chọn model chỉ theo Accuracy. Đây là kết luận trên một seed, cần lặp nhiều seed trước khi khẳng định ưu thế.'),
+
       heading('5. Robustness theo sampling, quantization và noise', HeadingLevel.HEADING_1),
       para('Để tách ảnh hưởng của từng yếu tố DSP, hệ thống cố định SVM + Butterworth + hybrid và chạy thêm 10 điều kiện trên pilot subset 100 bệnh nhân. Mỗi điều kiện dùng cùng patient split, seed và metric với matrix chính; các số liệu ở mục này chỉ dùng để minh họa xu hướng robustness, còn benchmark toàn cohort nằm ở mục 4.1.'),
       image('circor_100_robustness.png', 720, 205),
@@ -200,7 +208,7 @@ const doc = new Document({
       bullet('MLP và SVM là baseline CPU; nghiên cứu chưa đánh giá CNN hoặc calibration trên cohort lớn.'),
 
       heading('8. Kết luận và hướng phát triển', HeadingLevel.HEADING_1),
-      para('Đồ án đã xây dựng và kiểm chứng một pipeline PCG end-to-end có thể tái lập từ dữ liệu WAV tới prediction và FE visualization. Trên full public training release, benchmark cho thấy 1 kHz + 16-bit là lựa chọn nhanh nhất; 4 kHz + không quantization thêm đạt Macro-F1 cao nhất 0,637 trong split hiện tại với chi phí thời gian khoảng 1,48×. Matrix 24-run và robustness noise trên subset vẫn hữu ích để giải thích vai trò của filter, feature, classifier và nhiễu, nhưng được báo cáo riêng như pilot.'),
+      para('Đồ án đã xây dựng và kiểm chứng một pipeline PCG end-to-end có thể tái lập từ dữ liệu WAV tới prediction và FE visualization. Trên full public training release, full matrix cho thấy MLP + không filter + MFCC đạt Macro-F1 0,693, còn SVM + không filter + hybrid đạt balanced accuracy 0,664 trong split hiện tại. Preprocess benchmark cho thấy 1 kHz + 16-bit là lựa chọn nhanh nhất; 4 kHz + không quantization thêm đạt Macro-F1 0,637 với chi phí thời gian khoảng 1,48×. Các kết quả cần được kiểm chứng thêm bằng nhiều seed vì lớp Present vẫn khó nhận diện.'),
       para('Các bước phát triển tiếp theo gồm: lặp lại đánh giá với nhiều patient-wise seeds, sử dụng segmentation để tạo cycle-level feature, bổ sung confidence interval/calibration, và chỉ khi cần mới so sánh với spectrogram CNN hoặc mở rộng sang toàn bộ subjects ngoài public training release.'),
 
       heading('Tài liệu tham khảo', HeadingLevel.HEADING_1),

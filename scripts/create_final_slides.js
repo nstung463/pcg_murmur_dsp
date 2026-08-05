@@ -300,18 +300,40 @@ function addMetric(slide, x, y, value, label, color = C.teal) {
   addFooter(slide, 11);
 }
 
-// 12. Robustness
+// 12. Full-data matrix
 {
-  const slide = pptx.addSlide(); addTitle(slide, 'Pilot robustness: quantization và noise', '11 · Pilot robustness');
+  const slide = pptx.addSlide(); addTitle(slide, 'Full-data matrix: model × filter × feature', '11 · Full matrix');
+  addText(slide, 'Target fs = 1 kHz · quantization = 16-bit · seed 42 · test = 132 patients', 0.75, 1.35, 9.2, 0.3, { fontSize: 18, bold: true, color: C.navy });
+  const rows = [
+    [{ text: 'Model', options: { bold: true, color: C.white, fill: { color: C.navy2 } } }, { text: 'Filter', options: { bold: true, color: C.white, fill: { color: C.navy2 } } }, { text: 'Feature', options: { bold: true, color: C.white, fill: { color: C.navy2 } } }, { text: 'Accuracy', options: { bold: true, color: C.white, fill: { color: C.navy2 } } }, { text: 'Balanced acc.', options: { bold: true, color: C.white, fill: { color: C.navy2 } } }, { text: 'Macro-F1', options: { bold: true, color: C.white, fill: { color: C.navy2 } } }],
+    ['MLP', 'None', 'MFCC', '0.848', '0.657', '0.693'],
+    ['MLP', 'None', 'Hybrid', '0.841', '0.625', '0.654'],
+    ['SVM', 'None', 'Hybrid', '0.750', '0.664', '0.648'],
+    ['SVM', 'FIR', 'Hybrid', '0.765', '0.646', '0.644'],
+    ['SVM', 'None', 'MFCC', '0.742', '0.659', '0.642'],
+    ['SVM', 'FIR', 'MFCC', '0.758', '0.628', '0.628'],
+    ['SVM', 'Butterworth', 'Hybrid', '0.742', '0.618', '0.615'],
+  ];
+  slide.addTable(rows, { x: 0.7, y: 1.85, w: 8.85, h: 4.75, colW: [1.15, 1.65, 1.7, 1.35, 1.65, 1.35], rowH: [0.5, 0.58, 0.58, 0.58, 0.58, 0.58, 0.58, 0.58], border: { pt: 1, color: C.line }, fill: C.white, color: C.ink, fontFace: 'Aptos', fontSize: 14, align: 'center', valign: 'mid', margin: 0.06 });
+  card(slide, 9.85, 1.85, 2.45, 1.45, 'Best Macro-F1', 'MLP + none + MFCC', C.orange, '0.693');
+  card(slide, 9.85, 3.55, 2.45, 1.45, 'Best balanced acc.', 'SVM + none + hybrid', C.teal, '0.664');
+  card(slide, 9.85, 5.25, 2.45, 1.15, 'Cảnh báo', 'Present: 9/27 đúng ở best F1', C.purple);
+  addText(slide, 'Không filter thắng trong split này; cần nhiều seed trước khi kết luận ưu thế tổng quát.', 0.75, 6.7, 8.7, 0.25, { fontSize: 15, color: C.teal, bold: true });
+  addFooter(slide, 12);
+}
+
+// 13. Robustness
+{
+  const slide = pptx.addSlide(); addTitle(slide, 'Pilot robustness: quantization và noise', '12 · Pilot robustness');
   addImage(slide, 'circor_100_robustness.png', 0.7, 1.45, 8.0, 4.25);
   card(slide, 9.05, 1.55, 3.15, 1.15, 'Sampling 1/2/4 kHz', 'Metric gần như không đổi', C.teal, '0.928');
   card(slide, 9.05, 2.95, 3.15, 1.15, 'Quantization 8-bit', 'Mất độ phân giải biên độ', C.orange, '0.732');
   card(slide, 9.05, 4.35, 3.15, 1.15, 'Pink / impulse noise', 'Suy giảm mạnh hơn white noise', C.purple, '0.796');
   addText(slide, 'Interpretation: giữ đúng dải tần là cần thiết, nhưng bit depth và loại nhiễu quyết định độ bền của feature.', 0.85, 6.1, 11.6, 0.45, { fontSize: 18, color: C.navy, bold: true, align: 'center' });
-  addFooter(slide, 12);
+  addFooter(slide, 13);
 }
 
-// 13. Signal-level
+// 14. Signal-level
 {
   const slide = pptx.addSlide(); addTitle(slide, 'Signal-level analysis: từ waveform đến spectrogram', '11 · Signal + image');
   addImage(slide, 'circor_100_signal_report/signal_report.png', 0.65, 1.45, 7.3, 4.55);
@@ -319,10 +341,10 @@ function addMetric(slide, x, y, value, label, color = C.teal) {
   addText(slide, 'Cách đọc hình', 8.7, 1.9, 3.2, 0.35, { fontSize: 22, bold: true, color: C.navy });
   addBullets(slide, ['Waveform: transient và nhịp tim', 'FFT: thành phần tần số', 'PSD: năng lượng theo band', 'STFT: năng lượng thay đổi theo thời gian', 'Spectrogram là biểu diễn 2D cho phần Image Processing'], 8.7, 2.55, 3.1, 2.35, 15);
   addText(slide, 'Điểm nhấn: model không chỉ “nhìn” raw audio; nó sử dụng các đặc trưng được giải thích bằng DSP.', 8.7, 5.18, 3.1, 0.55, { fontSize: 15, color: C.teal, bold: true });
-  addFooter(slide, 13);
+  addFooter(slide, 14);
 }
 
-// 14. FE demo
+// 15. FE demo
 {
   const slide = pptx.addSlide(); addTitle(slide, 'FE demo và kịch bản trình diễn', '12 · Demo');
   const steps = [['1', 'Upload WAV', 'Chọn một recording PCG', C.teal], ['2', 'Analyze', 'Chạy đúng DSP pipeline', C.orange], ['3', 'Inspect', 'Waveform · FFT · PSD · STFT', C.purple], ['4', 'Decide', 'Label + probabilities', C.mint]];
@@ -339,7 +361,7 @@ function addMetric(slide, x, y, value, label, color = C.teal) {
   slide.addShape(pptx.ShapeType.rect, { x: 7.05, y: 3.75, w: 5.15, h: 2.55, rectRadius: 0.08, fill: { color: C.navy2 }, line: { color: C.navy2 } });
   addText(slide, 'Kịch bản nói', 7.4, 4.05, 4.3, 0.3, { fontSize: 21, bold: true, color: C.white });
   addBullets(slide, ['“Đây là raw PCG và các biểu diễn sau DSP.”', '“Tôi đổi 16-bit sang 8-bit để kiểm tra robustness.”', '“Model đã train trước; FE chỉ inference, không train lại.”', '“Đây là research prototype, không phải diagnosis.”'], 7.4, 4.62, 4.3, 1.25, 15, 'E6FFFB');
-  addFooter(slide, 14);
+  addFooter(slide, 15);
 }
 
 // 14. Limitations/conclusion
@@ -353,7 +375,7 @@ function addMetric(slide, x, y, value, label, color = C.teal) {
   addText(slide, 'Hạn chế cần nói rõ', 8.05, 1.65, 3.8, 0.3, { fontSize: 21, bold: true, color: 'FDBA74' });
   addBullets(slide, ['Public training release 942 bệnh nhân', 'Test set 132 bệnh nhân · seed 42', 'Chưa clinical validation', 'Chưa cycle-level segmentation'], 8.05, 2.25, 3.5, 1.75, 16, 'D7E5EE');
   addText(slide, 'Cảm ơn · Q&A', 7.65, 5.85, 4.6, 0.55, { fontSize: 27, bold: true, color: '8FE3D8', align: 'center' });
-  addFooter(slide, 15);
+  addFooter(slide, 16);
 }
 
 pptx.writeFile({ fileName: output });
