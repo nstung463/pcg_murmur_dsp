@@ -73,6 +73,7 @@ cells = [
     import pandas as pd
     import matplotlib.pyplot as plt
     import seaborn as sns
+    from scipy import signal
     from tqdm.auto import tqdm
     from IPython.display import display
 
@@ -408,6 +409,203 @@ tutorial_cells.insert(
     '''),
 )
 
+deep_dive_cells = [
+    cell("markdown", r'''
+    ## Deep dive A — File WAV thực chất là gì?
+
+    WAV có một phần header (sample rate, số channel, bit depth) và phần dữ liệu PCM. Phần PCM là dãy số biên độ:
+
+    `x[0], x[1], x[2], ...`
+
+    `load_wav()` của project chuyển dữ liệu integer về `float32`, chuẩn hóa gần `[-1, 1]`, và nếu stereo thì lấy trung bình hai channel thành mono.
+    '''),
+    cell("code", r'''
+    # Deep dive A — xem header và dãy số PCM của một WAV
+    from scipy.io import wavfile
+
+    deep_sample = Path(manifest.iloc[0].wav_path)
+    header_fs, pcm = wavfile.read(deep_sample)
+    loaded_fs, loaded_signal = load_wav(deep_sample)
+
+    print("File:", deep_sample.name)
+    print("Header sample rate:", header_fs, "Hz")
+    print("Header dtype:", pcm.dtype)
+    print("Header shape:", pcm.shape)
+    print("First 12 PCM values:", pcm[:12])
+    print("After load_wav dtype:", loaded_signal.dtype)
+    print("After load_wav range:", float(loaded_signal.min()), float(loaded_signal.max()))
+    print("Duration:", round(len(loaded_signal) / loaded_fs, 2), "seconds")
+
+    view_n = min(len(loaded_signal), max(1, int(.05 * loaded_fs)))
+    plt.figure(figsize=(14, 3))
+    plt.plot(np.arange(view_n) / loaded_fs, loaded_signal[:view_n], marker=".", ms=3, lw=.8)
+    plt.title("50 ms đầu tiên — mỗi chấm là một sample biên độ")
+    plt.xlabel("Time (s)")
+    plt.ylabel("Amplitude")
+    plt.grid(alpha=.2)
+    plt.tight_layout()
+    plt.show()
+    '''),
+    cell("markdown", r'''
+    ## Deep dive B — Layer 1: Resample
+
+    Nếu WAV gốc là 4 kHz thì có 4.000 samples mỗi giây. Resample về 1 kHz làm giảm mật độ samples xuống còn 1.000 mỗi giây; thời lượng và nội dung thời gian vẫn giữ nguyên.
+
+    Ví dụ: đoạn 3 giây giảm từ 12.000 samples xuống 3.000 samples.
+    '''),
+    cell("code", r'''
+    # Deep dive B — so sánh trước/sau resample
+    target_fs = 1000
+    resampled_deep = resample_signal(loaded_signal, loaded_fs, target_fs)
+    print("Before:", len(loaded_signal), "samples at", loaded_fs, "Hz")
+    print("After :", len(resampled_deep), "samples at", target_fs, "Hz")
+    print("Duration before/after:", round(len(loaded_signal)/loaded_fs, 3), round(len(resampled_deep)/target_fs, 3), "seconds")
+
+    seconds = min(.15, len(loaded_signal)/loaded_fs)
+    n_before = int(seconds * loaded_fs)
+    n_after = int(seconds * target_fs)
+    fig, axes = plt.subplots(2, 1, figsize=(14, 5))
+    axes[0].plot(np.arange(n_before)/loaded_fs, loaded_signal[:n_before], color="#D96445", marker=".", ms=2, lw=.6)
+    axes[0].set_title("Original sampling")
+    axes[1].plot(np.arange(n_after)/target_fs, resampled_deep[:n_after], color="#2B7A78", marker=".", ms=3, lw=.7)
+    axes[1].set_title("After resample to 1 kHz")
+    for ax in axes:
+        ax.set_xlabel("Time (s)"); ax.set_ylabel("Amplitude"); ax.grid(alpha=.2)
+    plt.tight_layout(); plt.show()
+    '''),
+    cell("markdown", r'''
+    ## Deep dive C — Layer 2: Quantization
+
+    Quantization làm tròn biên độ về một số mức hữu hạn:
+
+    - 16-bit: tối đa `2^16` mức;
+    - 8-bit: tối đa `2^8` mức.
+
+    Bit depth thấp hơn nghĩa là các thay đổi biên độ nhỏ có thể bị làm tròn mất.
+    '''),
+    cell("code", r'''
+    # Deep dive C — nhìn sai số quantization 16-bit và 8-bit
+    quant16 = quantize(resampled_deep, bits=16)
+    quant8 = quantize(resampled_deep, bits=8)
+    print("Theoretical levels — 16-bit:", 2**16, "| 8-bit:", 2**8)
+    print("Observed unique values — 16-bit:", len(np.unique(quant16)), "| 8-bit:", len(np.unique(quant8)))
+    print("First 12 values after 16-bit:", quant16[:12])
+    print("First 12 values after 8-bit :", quant8[:12])
+    print("Mean absolute quantization difference:", float(np.mean(np.abs(quant16 - quant8))))
+
+    n = min(len(quant16), 2000)
+    plt.figure(figsize=(14, 3.5))
+    plt.plot(quant16[:n], label="16-bit", lw=1)
+    plt.plot(quant8[:n], label="8-bit", lw=.8, alpha=.75)
+    plt.title("Quantization: 8-bit tạo staircase rõ hơn 16-bit")
+    plt.xlabel("Sample index")
+    plt.ylabel("Amplitude")
+    plt.legend(); plt.grid(alpha=.2); plt.tight_layout(); plt.show()
+    '''),
+    cell("markdown", r'''
+    ## Deep dive D — Layer 3: Band-pass filter
+
+    Filter giống như một chiếc rây tần số:
+
+    - loại phần dưới 25 Hz: drift/baseline;
+    - giữ phần 25–400 Hz: vùng quan tâm của heart sound/murmur;
+    - giảm phần trên 400 Hz: nhiễu cao tần.
+
+    Đây vẫn là waveform 1D, chỉ là waveform đã được làm sạch theo miền tần số.
+    '''),
+    cell("code", r'''
+    # Deep dive D — waveform và đáp ứng tần số của Butterworth
+    filter_spec_deep = design_filter(target_fs, "butterworth", 25, 400, 4, 129)
+    filtered_deep = apply_filter(quant16, filter_spec_deep)
+    _, sos_coeff = filter_spec_deep
+    response_freq, response = signal.sosfreqz(sos_coeff, worN=2048, fs=target_fs)
+
+    fig, axes = plt.subplots(2, 1, figsize=(14, 6))
+    view_n = min(len(quant16), 8 * target_fs)
+    axes[0].plot(np.arange(view_n)/target_fs, quant16[:view_n], label="before filter", lw=.7, alpha=.65)
+    axes[0].plot(np.arange(view_n)/target_fs, filtered_deep[:view_n], label="after filter", lw=.8)
+    axes[0].set_title("Waveform trước/sau band-pass")
+    axes[0].set_xlabel("Time (s)"); axes[0].set_ylabel("Amplitude"); axes[0].legend()
+    axes[1].plot(response_freq, 20*np.log10(np.maximum(np.abs(response), 1e-8)), color="#6A5C8A")
+    axes[1].axvline(25, color="#D96445", ls="--"); axes[1].axvline(400, color="#D96445", ls="--")
+    axes[1].set_xlim(0, target_fs/2); axes[1].set_ylim(-80, 5)
+    axes[1].set_title("Butterworth frequency response — vùng giữ lại 25–400 Hz")
+    axes[1].set_xlabel("Frequency (Hz)"); axes[1].set_ylabel("Gain (dB)")
+    axes[1].grid(alpha=.2)
+    plt.tight_layout(); plt.show()
+    '''),
+    cell("markdown", r'''
+    ## Deep dive E — Layer 4: Chia thành các đoạn nhỏ
+
+    Recording dài được chia thành window 3 giây, bước nhảy 1,5 giây. Hai window liên tiếp chồng lên nhau 1,5 giây để không bỏ sót murmur nằm ở ranh giới.
+    '''),
+    cell("code", r'''
+    # Deep dive E — visualize các window 3 s / hop 1,5 s
+    deep_segments = segment_signal(filtered_deep, target_fs, seconds=3.0, hop_seconds=1.5)
+    print("Samples per window:", len(deep_segments[0]))
+    print("Number of windows:", len(deep_segments))
+    view_n = min(len(filtered_deep), 12 * target_fs)
+    time_axis = np.arange(view_n) / target_fs
+    plt.figure(figsize=(14, 4))
+    plt.plot(time_axis, filtered_deep[:view_n], color="#17313B", lw=.7)
+    for start in np.arange(0, max(0, view_n/target_fs - 3), 1.5):
+        plt.axvspan(start, start+3, color="#2B7A78", alpha=.10)
+        plt.text(start+.05, 0.92, f"window {start:.1f}s", transform=plt.gca().get_xaxis_transform(), fontsize=9, color="#2B7A78")
+    plt.title("Mỗi vùng xanh là một input window cho feature extraction")
+    plt.xlabel("Time (s)"); plt.ylabel("Amplitude"); plt.tight_layout(); plt.show()
+    '''),
+    cell("markdown", r'''
+    ## Deep dive F — Từ một window waveform thành feature vector
+
+    Với mỗi window, project tính nhiều góc nhìn:
+
+    - time domain: mean, std, RMS, skewness, kurtosis;
+    - FFT/PSD: peak frequency, band power, spectral entropy;
+    - STFT: thống kê năng lượng trên time-frequency matrix;
+    - MFCC: mô tả hình dạng phổ âm thanh.
+
+    Kết quả cuối cùng là một vector số nhỏ hơn rất nhiều so với 3.000 samples raw.
+    '''),
+    cell("code", r'''
+    # Deep dive F — xem độ dài từng feature mode và các biểu diễn trung gian
+    feature_config_deep = {key: value for key, value in BASE_CONFIG["features"].items() if key != "mode"}
+    first_window = deep_segments[0]
+    feature_modes = ["stats", "psd", "mfcc", "stft", "hybrid"]
+    feature_vectors = {
+        mode: feature_vector(first_window, target_fs, mode=mode, **feature_config_deep)
+        for mode in feature_modes
+    }
+    print("Raw window length:", len(first_window), "samples")
+    for mode, vector in feature_vectors.items():
+        print(f"{mode:>6}: {len(vector):>3} numeric features | first values = {vector[:5]}")
+
+    fft_freq = np.fft.rfftfreq(2048, 1/target_fs)
+    fft_mag = np.abs(np.fft.rfft(first_window, n=2048))
+    psd_freq, psd_power = signal.welch(first_window, fs=target_fs, nperseg=min(512, len(first_window)))
+    stft_freq, stft_time, stft_mag = stft_matrix(first_window, target_fs)
+    import librosa
+    mfcc_image = librosa.feature.mfcc(y=first_window, sr=target_fs, n_mfcc=13, n_fft=512, hop_length=128)
+
+    fig, axes = plt.subplots(2, 2, figsize=(14, 8))
+    axes[0,0].plot(fft_freq, fft_mag, color="#2B7A78"); axes[0,0].set_xlim(0, 500); axes[0,0].set_title("FFT magnitude")
+    axes[0,1].semilogy(psd_freq, psd_power, color="#6A5C8A"); axes[0,1].set_xlim(0, 500); axes[0,1].set_title("PSD / band energy")
+    axes[1,0].pcolormesh(stft_time, stft_freq, stft_mag, shading="auto", cmap="viridis"); axes[1,0].set_ylim(0, 500); axes[1,0].set_title("STFT matrix")
+    axes[1,1].imshow(mfcc_image, aspect="auto", origin="lower", cmap="magma"); axes[1,1].set_title("MFCC coefficients")
+    plt.tight_layout(); plt.show()
+    '''),
+    cell("markdown", r'''
+    ## Deep dive G — Từ window vector thành patient vector
+
+    Một bệnh nhân có nhiều window và nhiều vị trí nghe. Project trung bình theo hai tầng:
+
+    `windows → recording vector → patient vector`
+
+    Vì vậy model cuối cùng nhận một dòng cho mỗi bệnh nhân. Đây là điểm giúp patient-wise split có ý nghĩa và tránh leakage.
+    '''),
+]
+
+insert_at = tutorial_cells.index(cells[4]) + 1
+tutorial_cells[insert_at:insert_at] = deep_dive_cells
 cells = tutorial_cells
 
 notebook = {
