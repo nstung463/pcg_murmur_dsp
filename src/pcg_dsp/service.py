@@ -62,7 +62,12 @@ def analyze_recording(
     source_fs, raw = _load_source(source)
     target_fs = int(dsp["target_fs"])
     resampled = resample_signal(raw, source_fs, target_fs)
-    quantized = quantize(resampled, int(dsp["quantization_bits"]))
+    quantization_bits = dsp.get("quantization_bits")
+    quantized = (
+        quantize(resampled, int(quantization_bits))
+        if quantization_bits is not None
+        else np.asarray(resampled, dtype=np.float32)
+    )
     processed = quantized
     if config.get("noise", {}).get("enabled", False):
         from .dsp import add_noise

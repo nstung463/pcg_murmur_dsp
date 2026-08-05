@@ -103,7 +103,14 @@ with st.sidebar:
     if config:
         dsp = config["dsp"]
         target_fs = st.selectbox("Target sampling rate", [1000, 2000, 4000], index=[1000, 2000, 4000].index(int(dsp["target_fs"])))
-        bits = st.selectbox("Quantization", [8, 12, 16], index=[8, 12, 16].index(int(dsp["quantization_bits"])))
+        bit_options = [None, 8, 12, 16]
+        bit_labels = {None: "Original / none", 8: "8-bit", 12: "12-bit", 16: "16-bit"}
+        bits = st.selectbox(
+            "Quantization",
+            bit_options,
+            index=bit_options.index(dsp.get("quantization_bits", 16)),
+            format_func=lambda value: bit_labels[value],
+        )
         filter_name = st.selectbox("Band-pass filter", ["none", "butterworth", "fir"], index=["none", "butterworth", "fir"].index(dsp["filter"]))
         noise_kind = st.selectbox("Noise preview", ["none", "white", "pink", "impulse"])
         snr_db = st.slider("Noise SNR (dB)", 0, 30, int(config.get("noise", {}).get("snr_db", 10)))

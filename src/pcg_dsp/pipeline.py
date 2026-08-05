@@ -8,6 +8,7 @@ import warnings
 import joblib
 import numpy as np
 import pandas as pd
+from joblib import Parallel, delayed
 from sklearn.metrics import accuracy_score, balanced_accuracy_score, confusion_matrix, f1_score, precision_score, recall_score
 from sklearn.model_selection import train_test_split
 
@@ -33,7 +34,9 @@ def _patient_features(patient, config: dict) -> np.ndarray:
         try:
             source_fs, raw = load_wav(recording.wav_path)
             x = resample_signal(raw, source_fs, int(dsp["target_fs"]))
-            x = quantize(x, int(dsp["quantization_bits"]))
+            quantization_bits = dsp.get("quantization_bits")
+            if quantization_bits is not None:
+                x = quantize(x, int(quantization_bits))
             if config.get("noise", {}).get("enabled", False):
                 x = add_noise(x, float(config["noise"]["snr_db"]), config["noise"]["kind"], int(config["split"]["seed"]))
             if dsp.get("wavelet_denoise", False):
@@ -51,22 +54,38 @@ def _patient_features(patient, config: dict) -> np.ndarray:
     return np.mean(features, axis=0).astype(np.float32)
 
 
+def _patient_feature_row(patient, config: dict) -> tuple[str, str, list[float] | None, str | None]:
+    """Compute one patient row, returning an error instead of failing a worker batch."""
+    try:
+        return patient.patient_id, patient.label, _patient_features(patient, config).tolist(), None
+    except ValueError as exc:
+        return patient.patient_id, patient.label, None, str(exc)
+
+
 def make_patient_table(data_dir: str | Path, config: dict, max_patients: int | None = None) -> pd.DataFrame:
     rows = []
     skip_invalid = bool(config.get("data", {}).get("skip_invalid_patients", False))
-    for index, patient in enumerate(iter_patients(data_dir)):
+    patients = []
+    for patient in iter_patients(data_dir):
         if patient.label == "Unknown" and not config["data"].get("include_unknown", False):
             continue
-        if max_patients is not None and len(rows) >= max_patients:
+        patients.append(patient)
+        if max_patients is not None and len(patients) >= max_patients:
             break
-        try:
-            features = _patient_features(patient, config)
-        except ValueError as exc:
+    n_jobs = max(1, int(config.get("data", {}).get("n_jobs", 1)))
+    if n_jobs == 1:
+        computed = [_patient_feature_row(patient, config) for patient in patients]
+    else:
+        computed = Parallel(n_jobs=n_jobs, backend="loky", batch_size=1)(
+            delayed(_patient_feature_row)(patient, config) for patient in patients
+        )
+    for patient_id, label, features, error in computed:
+        if features is None:
             if not skip_invalid:
-                raise
-            warnings.warn(str(exc), RuntimeWarning, stacklevel=2)
+                raise ValueError(error or f"No readable recordings for patient {patient_id}")
+            warnings.warn(error or f"No readable recordings for patient {patient_id}", RuntimeWarning, stacklevel=2)
             continue
-        rows.append({"patient_id": patient.patient_id, "label": patient.label, "features": features.tolist()})
+        rows.append({"patient_id": patient_id, "label": label, "features": features})
     return pd.DataFrame(rows)
 
 
