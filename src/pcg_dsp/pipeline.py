@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import warnings
 
 import joblib
 import numpy as np
@@ -27,32 +28,45 @@ def _patient_features(patient, config: dict) -> np.ndarray:
     dsp = config["dsp"]
     features = []
     spec = design_filter(dsp["target_fs"], dsp["filter"], dsp["low_hz"], dsp["high_hz"], dsp["order"], dsp["fir_taps"])
+    recording_errors = []
     for recording in patient.recordings:
-        source_fs, raw = load_wav(recording.wav_path)
-        x = resample_signal(raw, source_fs, int(dsp["target_fs"]))
-        x = quantize(x, int(dsp["quantization_bits"]))
-        if config.get("noise", {}).get("enabled", False):
-            x = add_noise(x, float(config["noise"]["snr_db"]), config["noise"]["kind"], int(config["split"]["seed"]))
-        if dsp.get("wavelet_denoise", False):
-            x = wavelet_denoise(x)
-        x = apply_filter(x, spec)
-        segments = segment_signal(x, int(dsp["target_fs"]), float(dsp["segment_seconds"]), float(dsp["segment_hop_seconds"]))
-        vectors = [feature_vector(segment, int(dsp["target_fs"]), **config["features"]) for segment in segments]
-        if vectors:
-            features.append(np.mean(vectors, axis=0))
+        try:
+            source_fs, raw = load_wav(recording.wav_path)
+            x = resample_signal(raw, source_fs, int(dsp["target_fs"]))
+            x = quantize(x, int(dsp["quantization_bits"]))
+            if config.get("noise", {}).get("enabled", False):
+                x = add_noise(x, float(config["noise"]["snr_db"]), config["noise"]["kind"], int(config["split"]["seed"]))
+            if dsp.get("wavelet_denoise", False):
+                x = wavelet_denoise(x)
+            x = apply_filter(x, spec)
+            segments = segment_signal(x, int(dsp["target_fs"]), float(dsp["segment_seconds"]), float(dsp["segment_hop_seconds"]))
+            vectors = [feature_vector(segment, int(dsp["target_fs"]), **config["features"]) for segment in segments]
+            if vectors:
+                features.append(np.mean(vectors, axis=0))
+        except Exception as exc:  # malformed/incomplete public-dataset files should not abort the cohort
+            recording_errors.append(f"{recording.wav_path.name}: {exc}")
     if not features:
-        raise ValueError(f"No readable recordings for patient {patient.patient_id}")
+        detail = "; ".join(recording_errors) if recording_errors else "no recording references"
+        raise ValueError(f"No readable recordings for patient {patient.patient_id} ({detail})")
     return np.mean(features, axis=0).astype(np.float32)
 
 
 def make_patient_table(data_dir: str | Path, config: dict, max_patients: int | None = None) -> pd.DataFrame:
     rows = []
+    skip_invalid = bool(config.get("data", {}).get("skip_invalid_patients", False))
     for index, patient in enumerate(iter_patients(data_dir)):
         if patient.label == "Unknown" and not config["data"].get("include_unknown", False):
             continue
         if max_patients is not None and len(rows) >= max_patients:
             break
-        rows.append({"patient_id": patient.patient_id, "label": patient.label, "features": _patient_features(patient, config).tolist()})
+        try:
+            features = _patient_features(patient, config)
+        except ValueError as exc:
+            if not skip_invalid:
+                raise
+            warnings.warn(str(exc), RuntimeWarning, stacklevel=2)
+            continue
+        rows.append({"patient_id": patient.patient_id, "label": patient.label, "features": features.tolist()})
     return pd.DataFrame(rows)
 
 

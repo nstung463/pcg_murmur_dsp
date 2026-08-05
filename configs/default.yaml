@@ -3,6 +3,9 @@ data:
   label_column: murmur
   include_unknown: false
   max_patients: null
+  # Public dataset mirrors can occasionally contain metadata without its WAV.
+  # Skip those patients with a warning instead of aborting the whole experiment.
+  skip_invalid_patients: true
 split:
   seed: 42
   train_size: 0.70

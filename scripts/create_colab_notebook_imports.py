@@ -53,7 +53,20 @@ cells = [
     RUN_MATRIX = True
     RUN_ROBUSTNESS = True
 
-    if not list(DATA_DIR.glob('*.txt')):
+    def missing_wav_references(data_dir):
+        missing = []
+        for patient_file in data_dir.glob('*.txt'):
+            lines = patient_file.read_text(encoding='utf-8', errors='replace').splitlines()
+            for line in lines[1:]:
+                fields = line.split()
+                if len(fields) >= 3 and not fields[0].startswith('#'):
+                    wav_path = data_dir / fields[2]
+                    if not wav_path.exists():
+                        missing.append(wav_path.name)
+        return sorted(set(missing))
+
+    missing_wavs = missing_wav_references(DATA_DIR)
+    if not list(DATA_DIR.glob('*.txt')) or missing_wavs:
         subprocess.run([
             'aws', 's3', 'sync', '--no-sign-request',
             's3://physionet-open/circor-heart-sound/1.0.3/training_data',
@@ -61,6 +74,11 @@ cells = [
         ], check=True)
 
     print('Patient files:', len(list(DATA_DIR.glob('*.txt'))))
+    missing_wavs = missing_wav_references(DATA_DIR)
+    print('Missing WAV references:', len(missing_wavs))
+    if missing_wavs:
+        print('First missing files:', missing_wavs[:10])
+        raise RuntimeError('Dataset download is incomplete; re-run this cell to resume the S3 sync.')
     if not list(DATA_DIR.glob('*.txt')):
         raise RuntimeError('Download chưa tạo file *.txt; thử chạy lại cell hoặc dùng ZIP của PhysioNet.')
     '''),
@@ -85,6 +103,7 @@ cells = [
     BASE_CONFIG = yaml.safe_load((PROJECT_DIR / 'configs' / 'default.yaml').read_text(encoding='utf-8'))
     BASE_CONFIG['data']['root'] = str(DATA_DIR)
     BASE_CONFIG['data']['max_patients'] = MAX_PATIENTS
+    BASE_CONFIG['data']['skip_invalid_patients'] = True
     print('Project package import OK')
     '''),
     cell("code", r'''
