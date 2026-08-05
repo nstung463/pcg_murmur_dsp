@@ -1,0 +1,34 @@
+data:
+  root: data/circor-subset/training_data
+  label_column: murmur
+  include_unknown: false
+  max_patients: null
+split:
+  seed: 42
+  train_size: 0.70
+  validation_size: 0.15
+dsp:
+  target_fs: 1000
+  quantization_bits: 16
+  filter: butterworth
+  low_hz: 25
+  high_hz: 400
+  order: 4
+  fir_taps: 129
+  wavelet_denoise: false
+  segment_seconds: 3.0
+  segment_hop_seconds: 1.5
+features:
+  mode: psd
+  n_mfcc: 13
+  n_fft: 512
+  hop_length: 128
+noise:
+  enabled: true
+  snr_db: 10
+  kind: white
+model:
+  kind: svm
+  seed: 42
+experiments:
+  output_dir: artifacts/runs

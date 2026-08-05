@@ -1,14 +1,12 @@
-FROM python:3.10.1-buster
+FROM python:3.11-slim
 
-## The MAINTAINER instruction sets the author field of the generated images.
-MAINTAINER author@example.com
-
-## DO NOT EDIT the 3 lines.
-RUN mkdir /physionet
-COPY ./ /physionet
 WORKDIR /physionet
-
-## Install your dependencies here using apt install, etc.
-
-## Include the following line if you have a requirements.txt file.
-RUN pip install -r requirements.txt
+COPY requirements.txt pyproject.toml ./
+RUN pip install --no-cache-dir -r requirements.txt
+COPY src ./src
+COPY configs ./configs
+COPY scripts ./scripts
+COPY tests ./tests
+COPY README.md ./README.md
+ENV PYTHONPATH=/physionet/src
+CMD ["python", "-m", "pcg_dsp.cli", "--help"]
