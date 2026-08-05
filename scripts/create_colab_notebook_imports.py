@@ -84,7 +84,7 @@ cells = [
     '''),
     cell("code", r'''
     # 3) Import đúng các module của project
-    import copy, json, yaml, joblib, sys
+    import copy, json, yaml, joblib, os, sys
     if str(PROJECT_DIR / 'src') not in sys.path:
         sys.path.insert(0, str(PROJECT_DIR / 'src'))
     import numpy as np
@@ -104,7 +104,9 @@ cells = [
     BASE_CONFIG['data']['root'] = str(DATA_DIR)
     BASE_CONFIG['data']['max_patients'] = MAX_PATIENTS
     BASE_CONFIG['data']['skip_invalid_patients'] = True
+    BASE_CONFIG['data']['n_jobs'] = max(1, min(4, (os.cpu_count() or 2) - 1))
     print('Project package import OK')
+    print('Feature workers:', BASE_CONFIG['data']['n_jobs'])
     '''),
     cell("code", r'''
     # 4) Audit data: counts, labels, sample rates
