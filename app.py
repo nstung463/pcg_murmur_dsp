@@ -57,6 +57,20 @@ MODEL_PRESETS = {
     "MLP · Butterworth + Hybrid": "artifacts/runs/mlp_butterworth_hybrid/model.joblib",
 }
 
+_ANALYSIS_STATE_KEYS = (
+    "analysis",
+    "baseline_analysis",
+    "audio_bytes",
+    "analysis_overrides",
+    "analysis_model_preset",
+)
+
+
+def _clear_analysis_state() -> None:
+    """Prevent a previous result from being shown for a new input/model."""
+    for key in _ANALYSIS_STATE_KEYS:
+        st.session_state.pop(key, None)
+
 
 @st.cache_resource(show_spinner=False)
 def _cached_model_bundle(model_path: str):
@@ -293,12 +307,18 @@ with st.sidebar:
     if previous_input_mode is not None and previous_input_mode != input_mode:
         # Do not accidentally analyze a file from the previous source after
         # the user switches between project data and external upload.
+        _clear_analysis_state()
         for key in ("input_bytes", "filename", "input_source", "input_path"):
             st.session_state.pop(key, None)
     st.session_state["_input_mode"] = input_mode
     if input_mode == "Upload external WAV":
         uploaded = st.file_uploader("Choose a WAV file", type=["wav"])
         if uploaded is not None:
+            if (
+                st.session_state.get("input_source") != "uploaded WAV"
+                or st.session_state.get("filename") != uploaded.name
+            ):
+                _clear_analysis_state()
             st.session_state["input_bytes"] = uploaded.getvalue()
             st.session_state["filename"] = uploaded.name
             st.session_state["input_source"] = "uploaded WAV"
@@ -312,11 +332,15 @@ with st.sidebar:
             help="Select a recording already stored in data/circor-heart-sound/.../training_data.",
         )
         if st.button("Use selected recording", icon=":material/folder_open:"):
+            if st.session_state.get("input_path") != str(selected_local_wav):
+                _clear_analysis_state()
             st.session_state["input_bytes"] = selected_local_wav.read_bytes()
             st.session_state["filename"] = selected_local_wav.name
             st.session_state["input_source"] = "project data WAV"
             st.session_state["input_path"] = str(selected_local_wav)
         if demo_wav is not None and st.button("Use bundled demo recording", icon=":material/play_circle:"):
+            if st.session_state.get("input_path") != str(demo_wav):
+                _clear_analysis_state()
             st.session_state["input_bytes"] = demo_wav.read_bytes()
             st.session_state["filename"] = demo_wav.name
             st.session_state["input_source"] = "bundled demo WAV"
@@ -341,6 +365,10 @@ with st.sidebar:
         st.caption(f"Patient `{patient_id}` · {len(patient_recording_paths)} recordings will be aggregated.")
 
     model_exists = Path(model_path).exists()
+    previous_model_path = st.session_state.get("_model_path")
+    if previous_model_path is not None and previous_model_path != model_path:
+        _clear_analysis_state()
+    st.session_state["_model_path"] = model_path
     if not model_exists:
         st.warning("Model file not found. Train a model or update the path.")
 
@@ -427,6 +455,7 @@ if analyze_clicked and active_bytes is not None and inference_ready and config i
             st.session_state["analysis"] = selected_result
             st.session_state["baseline_analysis"] = baseline_result
             st.session_state["analysis_overrides"] = overrides
+            st.session_state["analysis_model_preset"] = selected_preset if "selected_preset" in locals() else model_path
             st.session_state["audio_bytes"] = active_bytes
             status.update(label="Analysis complete", state="complete")
         except Exception as exc:
@@ -440,6 +469,11 @@ if result:
         st.info(
             f"Patient-level prediction: aggregated {result.get('recording_count', 0)} recordings "
             f"for patient {result.get('patient_id', 'selected patient')}. The plots show the selected representative recording."
+        )
+    else:
+        st.info(
+            "Recording-level preview: this prediction uses only the selected WAV and is not directly comparable "
+            "to the patient-level benchmark."
         )
     st.caption(f"Active recording: `{filename}` · {st.session_state.get('input_source', 'selected WAV')}")
     if st.session_state.get("audio_bytes"):
@@ -523,7 +557,7 @@ if result:
 
     export_payload = {
         "recording": filename,
-        "model": result.get("model_name", selected_preset if "selected_preset" in locals() else "classical"),
+        "model": result.get("model_name", st.session_state.get("analysis_model_preset", "classical")),
         "prediction": result["label"],
         "probabilities": result["probabilities"],
         "duration_seconds": result["duration_seconds"],
