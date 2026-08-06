@@ -35,6 +35,7 @@ from torchvision.models import MobileNet_V3_Small_Weights, mobilenet_v3_small
 
 from pcg_dsp.dsp import apply_filter, design_filter, quantize, resample_signal, segment_signal
 from pcg_dsp.io import iter_patients, load_wav
+from pcg_dsp.metrics import CHALLENGE_LABELS, challenge_metrics
 from pcg_dsp.pipeline import patient_split
 
 
@@ -50,16 +51,20 @@ class Example:
     segment: np.ndarray
 
 
+LABEL_TO_INDEX = {label: index for index, label in enumerate(CHALLENGE_LABELS)}
+
+
 def seed_everything(seed: int) -> None:
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
 
 
-def _patient_frame(data_dir: Path) -> pd.DataFrame:
+def _patient_frame(data_dir: Path, three_class: bool = False) -> pd.DataFrame:
     rows = []
     for patient in iter_patients(data_dir):
-        if patient.label not in {"Absent", "Present"}:
+        allowed = set(CHALLENGE_LABELS) if three_class else {"Absent", "Present"}
+        if patient.label not in allowed:
             continue
         # A patient with no existing WAV reference cannot contribute examples.
         if patient.recordings:
@@ -76,13 +81,15 @@ def _build_examples(
     segment_seconds: float,
     hop_seconds: float,
     max_windows_per_recording: int | None,
+    three_class: bool = False,
 ) -> list[Example]:
     spec = design_filter(target_fs, filter_name, 25.0, 400.0, 4, 129)
     examples: list[Example] = []
     for patient in iter_patients(data_dir):
-        if patient.patient_id not in patient_ids or patient.label not in {"Absent", "Present"}:
+        allowed = set(CHALLENGE_LABELS) if three_class else {"Absent", "Present"}
+        if patient.patient_id not in patient_ids or patient.label not in allowed:
             continue
-        label = int(patient.label == "Present")
+        label = LABEL_TO_INDEX[patient.label] if three_class else int(patient.label == "Present")
         for recording in patient.recordings:
             try:
                 source_fs, raw = load_wav(recording.wav_path)
@@ -182,6 +189,44 @@ def _metrics_from_predictions(y_true: np.ndarray, y_prob: np.ndarray, threshold:
     }
 
 
+def _patient_multiclass_predictions(patient_ids: list[str], labels: list[int], probabilities: list[np.ndarray], aggregation: str = "mean"):
+    grouped: dict[str, list[np.ndarray]] = {}
+    truth: dict[str, int] = {}
+    for patient_id, label, probability in zip(patient_ids, labels, probabilities):
+        grouped.setdefault(patient_id, []).append(np.asarray(probability, dtype=np.float32))
+        truth[patient_id] = int(label)
+    ids = sorted(grouped)
+    y_true = np.asarray([truth[patient_id] for patient_id in ids], dtype=np.int64)
+    values = []
+    for patient_id in ids:
+        current = np.stack(grouped[patient_id], axis=0)
+        if aggregation == "mean":
+            values.append(np.mean(current, axis=0))
+        elif aggregation == "median":
+            values.append(np.median(current, axis=0))
+        else:
+            raise ValueError("Three-class CNN supports mean or median aggregation")
+    return y_true, np.asarray(values), ids
+
+
+def _metrics_from_multiclass_predictions(y_true: np.ndarray, probabilities: np.ndarray) -> dict:
+    y_pred = np.argmax(probabilities, axis=1)
+    class_names = list(CHALLENGE_LABELS)
+    truth_names = [class_names[index] for index in y_true]
+    pred_names = [class_names[index] for index in y_pred]
+    result = {
+        "n_patients": int(len(y_true)),
+        "accuracy": float(accuracy_score(y_true, y_pred)),
+        "balanced_accuracy": float(balanced_accuracy_score(y_true, y_pred)),
+        "precision_macro": float(precision_score(y_true, y_pred, labels=[0, 1, 2], average="macro", zero_division=0)),
+        "recall_macro": float(recall_score(y_true, y_pred, labels=[0, 1, 2], average="macro", zero_division=0)),
+        "f1_macro": float(f1_score(y_true, y_pred, labels=[0, 1, 2], average="macro", zero_division=0)),
+        "confusion_matrix": confusion_matrix(y_true, y_pred, labels=[0, 1, 2]).tolist(),
+    }
+    result.update(challenge_metrics(truth_names, pred_names, probabilities, class_names))
+    return result
+
+
 def _patient_metrics(patient_ids: list[str], labels: list[int], probabilities: list[float], aggregation: str = "mean", threshold: float = 0.5) -> dict:
     y_true, y_prob, _ = _patient_predictions(patient_ids, labels, probabilities, aggregation)
     return _metrics_from_predictions(y_true, y_prob, threshold)
@@ -212,6 +257,23 @@ def evaluate(model, loader, device, aggregation: str = "mean", threshold: float 
     return metrics
 
 
+@torch.no_grad()
+def evaluate_multiclass(model, loader, device, aggregation: str = "mean", return_arrays: bool = False):
+    model.eval()
+    ids, labels, probabilities = [], [], []
+    for images, batch_labels, batch_ids in loader:
+        logits = model(images.to(device))
+        probs = torch.softmax(logits, dim=1).cpu().numpy()
+        ids.extend(list(batch_ids))
+        labels.extend(batch_labels.numpy().tolist())
+        probabilities.extend(list(probs))
+    y_true, y_prob, patient_ids = _patient_multiclass_predictions(ids, labels, probabilities, aggregation)
+    metrics = _metrics_from_multiclass_predictions(y_true, y_prob)
+    if return_arrays:
+        return metrics, y_true, y_prob, patient_ids
+    return metrics
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--data-dir", type=Path, default=DEFAULT_DATA)
@@ -232,22 +294,29 @@ def main() -> None:
     parser.add_argument("--aggregation", choices=["mean", "median", "max", "top25"], default="mean")
     parser.add_argument("--tune-threshold", action="store_true")
     parser.add_argument("--unfreeze-last-blocks", type=int, default=0)
+    parser.add_argument("--three-class", action="store_true", help="Use Absent/Present/Unknown and challenge-aligned metrics.")
+    parser.add_argument("--train-size", type=float, default=0.70)
+    parser.add_argument("--validation-size", type=float, default=0.15)
     args = parser.parse_args()
 
     seed_everything(args.seed)
     args.output_dir.mkdir(parents=True, exist_ok=True)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    frame = _patient_frame(args.data_dir)
+    if args.three_class and args.tune_threshold:
+        raise SystemExit("--tune-threshold is only supported for the binary CNN task.")
+    frame = _patient_frame(args.data_dir, three_class=args.three_class)
     if args.max_patients is not None:
         frame = frame.head(args.max_patients).copy()
     split_seed = args.seed if args.split_seed is None else args.split_seed
-    train_ids, val_ids, test_ids = patient_split(frame, seed=split_seed, train_size=0.70, validation_size=0.15)
+    train_size = 0.65 if args.three_class else args.train_size
+    validation_size = 0.10 if args.three_class else args.validation_size
+    train_ids, val_ids, test_ids = patient_split(frame, seed=split_seed, train_size=train_size, validation_size=validation_size)
     print(f"Device: {device}; patients: train={len(train_ids)}, val={len(val_ids)}, test={len(test_ids)}")
 
     started = time.perf_counter()
-    train_examples = _build_examples(args.data_dir, set(train_ids), args.target_fs, args.filter_name, args.quantization_bits, 3.0, 1.5, args.max_windows_per_recording)
-    val_examples = _build_examples(args.data_dir, set(val_ids), args.target_fs, args.filter_name, args.quantization_bits, 3.0, 1.5, args.max_windows_per_recording)
-    test_examples = _build_examples(args.data_dir, set(test_ids), args.target_fs, args.filter_name, args.quantization_bits, 3.0, 1.5, args.max_windows_per_recording)
+    train_examples = _build_examples(args.data_dir, set(train_ids), args.target_fs, args.filter_name, args.quantization_bits, 3.0, 1.5, args.max_windows_per_recording, args.three_class)
+    val_examples = _build_examples(args.data_dir, set(val_ids), args.target_fs, args.filter_name, args.quantization_bits, 3.0, 1.5, args.max_windows_per_recording, args.three_class)
+    test_examples = _build_examples(args.data_dir, set(test_ids), args.target_fs, args.filter_name, args.quantization_bits, 3.0, 1.5, args.max_windows_per_recording, args.three_class)
     print(f"Windows: train={len(train_examples)}, val={len(val_examples)}, test={len(test_examples)}; prep={time.perf_counter()-started:.1f}s")
 
     train_loader = DataLoader(PCGWindowDataset(train_examples, args.target_fs, args.image_size), batch_size=args.batch_size, shuffle=True, num_workers=0)
@@ -256,7 +325,8 @@ def main() -> None:
 
     weights = MobileNet_V3_Small_Weights.DEFAULT if args.pretrained else None
     model = mobilenet_v3_small(weights=weights)
-    model.classifier[-1] = nn.Linear(model.classifier[-1].in_features, 2)
+    n_classes = 3 if args.three_class else 2
+    model.classifier[-1] = nn.Linear(model.classifier[-1].in_features, n_classes)
     if args.freeze_backbone:
         for parameter in model.features.parameters():
             parameter.requires_grad = False
@@ -265,8 +335,8 @@ def main() -> None:
             for parameter in block.parameters():
                 parameter.requires_grad = True
     model.to(device)
-    counts = np.bincount([example.label for example in train_examples], minlength=2).astype(np.float32)
-    class_weights = torch.tensor(counts.sum() / (2.0 * np.maximum(counts, 1.0)), dtype=torch.float32, device=device)
+    counts = np.bincount([example.label for example in train_examples], minlength=n_classes).astype(np.float32)
+    class_weights = torch.tensor(counts.sum() / (n_classes * np.maximum(counts, 1.0)), dtype=torch.float32, device=device)
     criterion = nn.CrossEntropyLoss(weight=class_weights)
     optimizer = torch.optim.AdamW((parameter for parameter in model.parameters() if parameter.requires_grad), lr=1e-4, weight_decay=1e-4)
     best_val = -1.0
@@ -283,10 +353,14 @@ def main() -> None:
             loss.backward()
             optimizer.step()
             losses.append(float(loss.item()))
-        val_metrics, y_val, p_val, _ = evaluate(model, val_loader, device, args.aggregation, 0.5, return_arrays=True)
-        threshold = 0.5
-        if args.tune_threshold:
-            threshold, val_metrics = _tune_threshold(y_val, p_val)
+        if args.three_class:
+            val_metrics, _, _, _ = evaluate_multiclass(model, val_loader, device, args.aggregation, return_arrays=True)
+            threshold = 0.5
+        else:
+            val_metrics, y_val, p_val, _ = evaluate(model, val_loader, device, args.aggregation, 0.5, return_arrays=True)
+            threshold = 0.5
+            if args.tune_threshold:
+                threshold, val_metrics = _tune_threshold(y_val, p_val)
         row = {"epoch": epoch, "loss": float(np.mean(losses)), **{f"val_{k}": v for k, v in val_metrics.items() if isinstance(v, (int, float))}}
         history.append(row)
         print(f"epoch {epoch}: loss={row['loss']:.4f}, val_f1={val_metrics['f1_macro']:.4f}, val_balanced={val_metrics['balanced_accuracy']:.4f}, threshold={threshold:.2f}")
@@ -304,7 +378,7 @@ def main() -> None:
         model.load_state_dict(best_state)
     if "best_threshold" not in locals():
         best_threshold = 0.5
-    test_metrics = evaluate(model, test_loader, device, args.aggregation, best_threshold)
+    test_metrics = evaluate_multiclass(model, test_loader, device, args.aggregation) if args.three_class else evaluate(model, test_loader, device, args.aggregation, best_threshold)
     result = {
         "model": "MobileNetV3-Small",
         "seed": args.seed,
@@ -316,6 +390,10 @@ def main() -> None:
         "tune_threshold": bool(args.tune_threshold),
         "best_threshold": float(best_threshold),
         "unfreeze_last_blocks": args.unfreeze_last_blocks,
+        "task": "three_class_murmur" if args.three_class else "binary_murmur",
+        "class_names": list(CHALLENGE_LABELS) if args.three_class else ["Absent", "Present"],
+        "train_size": train_size,
+        "validation_size": validation_size,
         "split_seed": split_seed,
         "parameters": int(sum(parameter.numel() for parameter in model.parameters())),
         "device": str(device),

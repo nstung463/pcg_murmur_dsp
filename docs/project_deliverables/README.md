@@ -21,3 +21,5 @@ The optional challenge-aligned track is documented in
 matrix or interpreted as a hidden-test leaderboard submission.
 The standardized binary DSP plus pretrained-CNN comparison is documented in
 `benchmark_matrix_standardized.md`.
+The challenge-aligned three-class full matrix is in
+`challenge_aligned_full_matrix.md`.
