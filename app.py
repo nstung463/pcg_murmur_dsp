@@ -29,6 +29,21 @@ from pcg_dsp.service import analyze_recording, load_model_bundle
 DEFAULT_MODEL = "artifacts/runs/svm_butterworth_hybrid/model.joblib"
 DEMO_DATA_ROOT = PROJECT_ROOT / "data" / "circor-heart-sound" / "1.0.3" / "training_data"
 
+# Curated model bundles for the demo.  The paths are relative to the project
+# root so the same dropdown works after cloning the repository on another
+# machine.  We intentionally omit fixture/noise-only runs from the polished
+# demo; those remain available for notebook experiments.
+MODEL_PRESETS = {
+    "Recommended · SVM + Butterworth + Hybrid": "artifacts/runs/svm_butterworth_hybrid/model.joblib",
+    "SVM · No filter + Hybrid": "artifacts/runs/svm_none_hybrid/model.joblib",
+    "SVM · FIR + Hybrid": "artifacts/runs/svm_fir_hybrid/model.joblib",
+    "SVM · Butterworth + MFCC": "artifacts/runs/svm_butterworth_mfcc/model.joblib",
+    "SVM · Butterworth + PSD": "artifacts/runs/svm_butterworth_psd/model.joblib",
+    "SVM · Butterworth + STFT": "artifacts/runs/svm_butterworth_stft/model.joblib",
+    "MLP · No filter + MFCC": "artifacts/runs/mlp_none_mfcc/model.joblib",
+    "MLP · Butterworth + Hybrid": "artifacts/runs/mlp_butterworth_hybrid/model.joblib",
+}
+
 
 @st.cache_resource(show_spinner=False)
 def _cached_model_bundle(model_path: str):
@@ -150,7 +165,27 @@ st.caption("Educational research prototype. This is not a clinical diagnostic de
 demo_wav = _find_demo_wav()
 with st.sidebar:
     st.header("Model and DSP")
-    model_path = st.text_input("Model path", DEFAULT_MODEL)
+    available_presets = {
+        label: path
+        for label, path in MODEL_PRESETS.items()
+        if (PROJECT_ROOT / path).exists()
+    }
+    if available_presets:
+        preset_labels = list(available_presets)
+        default_label = next(iter(MODEL_PRESETS))
+        default_index = preset_labels.index(default_label) if default_label in preset_labels else 0
+        selected_preset = st.selectbox(
+            "Model preset",
+            preset_labels,
+            index=default_index,
+            help="Choose one of the trained bundles; its DSP configuration is loaded automatically.",
+        )
+        model_relpath = available_presets[selected_preset]
+        model_path = str(PROJECT_ROOT / model_relpath)
+        st.caption(f"Bundle: `{model_relpath}`")
+    else:
+        model_path = DEFAULT_MODEL
+        st.error("No trained model bundles were found in `artifacts/runs`. Run the training notebook first.")
     uploaded = st.file_uploader("Upload a heart-sound WAV", type=["wav"])
     if uploaded is not None:
         st.session_state["input_bytes"] = uploaded.getvalue()

@@ -135,7 +135,8 @@ $env:PYTHONPATH = "$PWD\src"
 ```
 
 The UI accepts a WAV upload or the bundled demo recording, plays each DSP
-stage, runs the saved model bundle, and shows the raw/processed waveform, FFT
+stage, lets the user choose a trained SVM/MLP model preset from a dropdown,
+runs the saved model bundle, and shows the raw/processed waveform, FFT
 magnitude, Welch PSD, filter frequency response, log-STFT spectrogram, class
 probabilities, confidence, and DSP configuration used. Sampling rate,
 quantization, filter, and controlled noise preview can be changed in the
