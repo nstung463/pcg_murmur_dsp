@@ -59,6 +59,13 @@ def _find_demo_wav() -> Path | None:
     return candidates[0] if candidates else None
 
 
+def _list_project_wavs() -> list[Path]:
+    """List recordings shipped/downloaded in the project's data directory."""
+    if not DEMO_DATA_ROOT.exists():
+        return []
+    return sorted(DEMO_DATA_ROOT.glob("*.wav"))
+
+
 def _plot_waveforms(result: dict):
     raw = result["raw_signal"]
     filtered = result["filtered_signal"]
@@ -163,6 +170,7 @@ st.title("PCG Murmur Detection — DSP Demo")
 st.caption("Educational research prototype. This is not a clinical diagnostic device.")
 
 demo_wav = _find_demo_wav()
+project_wavs = _list_project_wavs()
 with st.sidebar:
     st.header("Model and DSP")
     available_presets = {
@@ -191,12 +199,24 @@ with st.sidebar:
         st.session_state["input_bytes"] = uploaded.getvalue()
         st.session_state["filename"] = uploaded.name
         st.session_state["input_source"] = "uploaded WAV"
+    if project_wavs:
+        st.caption(f"Project data folder: `{DEMO_DATA_ROOT}`")
+        selected_local_wav = st.selectbox(
+            "Choose WAV from project data",
+            project_wavs,
+            format_func=lambda path: path.name,
+            help="Select a recording already stored in data/circor-heart-sound/.../training_data.",
+        )
+        if st.button("Use selected project WAV", icon=":material/folder_open:"):
+            st.session_state["input_bytes"] = selected_local_wav.read_bytes()
+            st.session_state["filename"] = selected_local_wav.name
+            st.session_state["input_source"] = "project data WAV"
     if demo_wav is not None and st.button("Use demo recording", icon=":material/play_circle:"):
         st.session_state["input_bytes"] = demo_wav.read_bytes()
         st.session_state["filename"] = demo_wav.name
         st.session_state["input_source"] = "bundled demo WAV"
-    if st.session_state.get("input_source") == "bundled demo WAV":
-        st.caption(f"Demo file: `{demo_wav.name if demo_wav else 'not found'}`")
+    if st.session_state.get("input_source") in {"bundled demo WAV", "project data WAV"}:
+        st.caption(f"Selected file: `{st.session_state.get('filename', 'not selected')}`")
 
     model_exists = Path(model_path).exists()
     if not model_exists:
