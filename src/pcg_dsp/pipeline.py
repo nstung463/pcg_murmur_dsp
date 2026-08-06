@@ -15,6 +15,7 @@ from sklearn.model_selection import train_test_split
 from .dsp import add_noise, apply_filter, design_filter, feature_vector, quantize, resample_signal, segment_signal, wavelet_denoise
 from .io import build_manifest, iter_patients, load_wav
 from .models import make_model
+from .metrics import CHALLENGE_LABELS, challenge_metrics
 
 
 def patient_split(manifest: pd.DataFrame, seed: int = 42, train_size: float = 0.70, validation_size: float = 0.15):
@@ -102,6 +103,7 @@ def train_evaluate(table: pd.DataFrame, config: dict, output_dir: str | Path) ->
     model = make_model(config["model"]["kind"], config["model"]["seed"])
     model.fit(x_train, y_train)
     prediction = model.predict(x_test)
+    labels = sorted(set(y_test))
     result = {
         "n_train": int(len(train)),
         "n_validation": int(len(ids_val)),
@@ -111,9 +113,17 @@ def train_evaluate(table: pd.DataFrame, config: dict, output_dir: str | Path) ->
         "precision_macro": float(precision_score(y_test, prediction, average="macro", zero_division=0)),
         "recall_macro": float(recall_score(y_test, prediction, average="macro", zero_division=0)),
         "f1_macro": float(f1_score(y_test, prediction, average="macro", zero_division=0)),
-        "labels": sorted(set(y_test)),
-        "confusion_matrix": confusion_matrix(y_test, prediction, labels=sorted(set(y_test))).tolist(),
+        "labels": labels,
+        "confusion_matrix": confusion_matrix(y_test, prediction, labels=labels).tolist(),
     }
+    # Keep the original binary DSP metrics, and add challenge metrics only
+    # when the run really contains all three murmur classes. This prevents a
+    # binary Absent/Present experiment from being mistaken for the official
+    # three-class leaderboard protocol.
+    if set(CHALLENGE_LABELS).issubset(set(labels)) and hasattr(model, "predict_proba"):
+        probabilities = model.predict_proba(x_test)
+        model_classes = list(getattr(model, "classes_", labels))
+        result.update(challenge_metrics(y_test, prediction, probabilities, model_classes))
     joblib.dump({"model": model, "config": config}, output_dir / "model.joblib")
     (output_dir / "metrics.json").write_text(pd.Series(result).to_json(indent=2), encoding="utf-8")
     return result

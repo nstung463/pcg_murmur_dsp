@@ -114,7 +114,7 @@ function addMetric(slide, x, y, value, label, color = C.teal) {
   addText(slide, 'DSP501 · FINAL PROJECT', 0.7, 0.72, 5.4, 0.3, { fontSize: 13, bold: true, color: '8FE3D8', charSpacing: 1.5 });
   addText(slide, 'Robust PCG Murmur\nDetection with DSP', 0.72, 1.5, 5.0, 1.6, { fontFace: 'Georgia', fontSize: 31, bold: true, color: C.white, breakLine: true });
   addText(slide, 'Nghiên cứu ảnh hưởng của sampling, quantization, filtering và time–frequency features trên tín hiệu phonocardiogram.', 0.72, 3.35, 5.2, 1.0, { fontSize: 18, color: 'D7E5EE' });
-  addText(slide, 'CirCor DigiScope · SVM/MLP · Streamlit demo', 0.72, 5.85, 5.6, 0.3, { fontSize: 14, color: '8FE3D8', bold: true });
+  addText(slide, 'CirCor DigiScope · SVM/MLP/CNN · Streamlit demo', 0.72, 5.85, 5.6, 0.3, { fontSize: 14, color: '8FE3D8', bold: true });
   slide.addShape(pptx.ShapeType.rect, { x: 5.92, y: 0.88, w: 6.82, h: 5.32, fill: { color: C.white }, line: { color: C.orange, width: 1.2 } });
   addImage(slide, 'circor_100_signal_report/signal_report.png', 6.08, 1.02, 6.5, 5.0, 8);
   slide.addShape(pptx.ShapeType.rect, { x: 5.92, y: 6.35, w: 6.82, h: 0.65, fill: { color: C.orange }, line: { color: C.orange } });
@@ -145,7 +145,7 @@ function addMetric(slide, x, y, value, label, color = C.teal) {
   slide.addChart(pptx.ChartType.bar, [{ name: 'Patients', labels: ['Absent', 'Present', 'Unknown'], values: [695, 179, 68] }], { x: 0.75, y: 2.65, w: 5.2, h: 3.35, catAxisLabelFontFace: 'Aptos', catAxisLabelFontSize: 13, valAxisLabelFontSize: 11, valAxisMinVal: 0, valAxisMaxVal: 720, valGridLine: { color: 'E2E8F0', width: 1 }, chartColors: [C.teal], showLegend: false, showTitle: false, showValue: true, dataLabelColor: C.ink, dataLabelPosition: 'outEnd', showCatName: false, showValAxisTitle: false, showCatAxisTitle: false, showBorder: false });
   slide.addShape(pptx.ShapeType.rect, { x: 6.45, y: 2.65, w: 5.8, h: 3.35, rectRadius: 0.08, fill: { color: C.white }, line: { color: C.line, width: 1 } });
   addText(slide, 'Patient-wise label handling', 6.8, 2.98, 4.8, 0.35, { fontSize: 20, bold: true, color: C.navy });
-  addBullets(slide, ['Absent: 695 patients', 'Present: 179 patients', 'Unknown: 68 patients', '874 labeled patients dùng cho supervised training'], 6.8, 3.55, 4.85, 1.7, 16);
+  addBullets(slide, ['Absent: 695 patients', 'Present: 179 patients', 'Unknown: 68 patients', 'Primary track giữ đủ 942 patients', 'Binary ablation: 874 patients'], 6.8, 3.45, 4.85, 2.05, 15);
   addText(slide, 'Dataset source: PhysioNet CirCor DigiScope 1.0.3', 6.8, 5.55, 4.9, 0.25, { fontSize: 13, color: C.teal, italic: true });
   addFooter(slide, 3);
 }
@@ -197,7 +197,7 @@ function addMetric(slide, x, y, value, label, color = C.teal) {
 {
   const slide = pptx.addSlide(); addTitle(slide, 'Pipeline DSP end-to-end', '05 · Method');
   const nodes = [
-    ['WAV', 'read + mono', C.navy2], ['Resample', '1/2/4 kHz', C.teal], ['Quantize', '8/12/16 bit', C.orange], ['Filter', '25–400 Hz', C.purple], ['Segment', '3 s / 1.5 s', C.mint], ['Features', 'FFT · PSD · STFT · MFCC', C.teal], ['Model', 'SVM / MLP', C.orange], ['Output', 'label + probability', C.navy2],
+    ['WAV', 'read + mono', C.navy2], ['Resample', '1/2/4 kHz', C.teal], ['Quantize', '8/12/16 bit', C.orange], ['Filter', '25–400 Hz', C.purple], ['Segment', '3 s / 1.5 s', C.mint], ['Features', 'FFT · PSD · STFT · MFCC', C.teal], ['Model', 'SVM / MLP / CNN optional', C.orange], ['Output', 'label + probability', C.navy2],
   ];
   const x0 = 0.55; const gap = 0.12; const nw = 1.48; const y = 2.35;
   nodes.forEach((n, i) => {
@@ -227,7 +227,7 @@ function addMetric(slide, x, y, value, label, color = C.teal) {
   addText(slide, 'STFT tạo ma trận 2D time–frequency; đây là cầu nối tự nhiên sang Image Processing.', 1.08, 5.05, 4.65, 0.62, { fontSize: 15, color: 'D7E5EE', italic: true });
   const feats = [['Stats', 'RMS · skew · kurtosis'], ['PSD', 'Band powers · entropy'], ['FFT', 'Peak frequencies'], ['MFCC', '13 coefficients'], ['Hybrid', 'Kết hợp toàn bộ'],];
   feats.forEach((f, i) => card(slide, 6.8 + (i % 2) * 2.85, 1.55 + Math.floor(i / 2) * 1.4, 2.55, 1.05, f[0], f[1], [C.teal, C.orange, C.purple, C.mint, C.navy2][i]));
-  addText(slide, 'Không dùng CNN trong baseline: giữ mục tiêu là phân tích tác động DSP và tái lập CPU.', 6.85, 5.85, 5.2, 0.45, { fontSize: 16, color: C.orange, bold: true });
+  addText(slide, 'CNN chỉ là baseline bổ sung; mục tiêu chính vẫn là phân tích tác động DSP và tái lập CPU.', 6.85, 5.85, 5.2, 0.45, { fontSize: 16, color: C.orange, bold: true });
   addFooter(slide, 7);
 }
 
@@ -239,10 +239,10 @@ function addMetric(slide, x, y, value, label, color = C.teal) {
   recs.forEach((r, i) => { const x = 1.05 + i * 1.1; slide.addShape(pptx.ShapeType.rect, { x, y: 2.35, w: 0.85, h: 0.65, rectRadius: 0.04, fill: { color: r[1] }, line: { color: r[1] } }); addText(slide, r[0], x, 2.56, 0.85, 0.18, { fontSize: 16, bold: true, color: C.white, align: 'center' }); });
   addText(slide, 'PATIENT 13918', 1.15, 3.25, 3.95, 0.3, { fontSize: 18, bold: true, color: C.teal, align: 'center' });
   slide.addShape(pptx.ShapeType.line, { x: 3.0, y: 3.0, w: 0, h: 0.2, line: { color: C.teal, width: 2, endArrowType: 'triangle' } });
-  const splits = [['Train\n611', C.teal], ['Validation\n131', C.orange], ['Test\n132', C.purple]];
+  const splits = [['Train\n612', C.teal], ['Validation\n94', C.orange], ['Test\n236', C.purple]];
   splits.forEach((s, i) => { const x = 6.2 + i * 2.05; slide.addShape(pptx.ShapeType.rect, { x, y: 2.1, w: 1.65, h: 1.45, rectRadius: 0.06, fill: { color: s[1] }, line: { color: s[1] } }); addText(slide, s[0], x + 0.1, 2.47, 1.45, 0.55, { fontSize: 22, bold: true, color: C.white, align: 'center', breakLine: true }); });
   slide.addShape(pptx.ShapeType.line, { x: 5.25, y: 2.82, w: 0.85, h: 0, line: { color: C.muted, width: 1.5, endArrowType: 'triangle' } });
-  addText(slide, 'Tất cả location của cùng patient nằm trong cùng một partition.', 6.25, 4.25, 5.65, 0.55, { fontSize: 19, color: C.navy, bold: true, align: 'center' });
+  addText(slide, 'Primary challenge-aligned split: 65 / 10 / 25 · 612 / 94 / 236 patients.', 6.25, 4.25, 5.65, 0.55, { fontSize: 17, color: C.navy, bold: true, align: 'center' });
   addText(slide, 'Nếu split theo recording, model có thể học “dấu vân tay” của patient thay vì murmur.', 1.0, 5.45, 11.2, 0.45, { fontSize: 19, color: C.orange, bold: true, align: 'center' });
   addFooter(slide, 8);
 }
@@ -258,7 +258,7 @@ function addMetric(slide, x, y, value, label, color = C.teal) {
     ['FIR', 'SVM/MLP', 'SVM/MLP', 'SVM/MLP', 'SVM/MLP'],
   ];
   slide.addTable(rows, { x: 1.05, y: 2.25, w: 8.1, h: 2.65, colW: [2.0, 1.5, 1.5, 1.5, 1.6], rowH: [0.55, 0.7, 0.7, 0.7], border: { pt: 1, color: C.line }, fill: C.white, color: C.ink, fontFace: 'Aptos', fontSize: 17, align: 'center', valign: 'mid', margin: 0.08, bold: false });
-  card(slide, 9.75, 2.15, 2.2, 1.4, 'Primary metric', 'Macro-F1', C.teal, 'F1');
+  card(slide, 9.75, 2.15, 2.2, 1.4, 'Primary metric', 'Weighted Accuracy', C.teal, 'WAcc');
   card(slide, 9.75, 3.85, 2.2, 1.4, 'Split', 'Patient-wise', C.orange, 'P');
   card(slide, 9.75, 5.55, 2.2, 1.0, 'Seeds', '42 · fixed', C.purple);
   addText(slide, 'Mỗi run lưu model bundle + config + metrics.json để tái lập inference.', 1.05, 5.55, 8.1, 0.45, { fontSize: 17, color: C.teal, bold: true, align: 'center' });
@@ -267,7 +267,7 @@ function addMetric(slide, x, y, value, label, color = C.teal) {
 
 // 10. Main results
 {
-  const slide = pptx.addSlide(); addTitle(slide, 'Pilot matrix: hybrid + SVM dẫn đầu', '09 · Pilot subset results');
+  const slide = pptx.addSlide(); addTitle(slide, 'PILOT ONLY: hybrid + SVM dẫn đầu', '09 · Pilot subset results');
   addImage(slide, 'circor_100_f1.png', 0.75, 1.55, 7.15, 4.1);
   slide.addShape(pptx.ShapeType.rect, { x: 8.35, y: 1.55, w: 4.3, h: 1.45, rectRadius: 0.08, fill: { color: 'E6FFFB' }, line: { color: '99F6E4', width: 1 } });
   addText(slide, 'BEST', 8.7, 1.83, 0.8, 0.24, { fontSize: 13, bold: true, color: C.teal });
@@ -275,7 +275,7 @@ function addMetric(slide, x, y, value, label, color = C.teal) {
   addText(slide, 'SVM + Butterworth/FIR + hybrid', 8.7, 2.36, 3.35, 0.24, { fontSize: 14, color: C.ink });
   addText(slide, 'Confusion matrix — best model', 8.45, 3.35, 3.9, 0.3, { fontSize: 17, bold: true, color: C.navy });
   slide.addTable([[{ text: '', options: { fill: { color: C.navy2 }, color: C.white } }, { text: 'Pred A', options: { fill: { color: C.navy2 }, color: C.white, bold: true } }, { text: 'Pred P', options: { fill: { color: C.navy2 }, color: C.white, bold: true } }], [{ text: 'Actual A', options: { bold: true } }, '9', '1'], [{ text: 'Actual P', options: { bold: true } }, '0', '5']], { x: 8.45, y: 3.78, w: 3.65, h: 1.55, colW: [1.25, 1.2, 1.2], rowH: [0.4, 0.55, 0.55], border: { pt: 1, color: C.line }, fontFace: 'Aptos', fontSize: 17, align: 'center', valign: 'mid', margin: 0.06 });
-  addText(slide, 'Pilot subset 100 patients · Accuracy 0.933 · Balanced accuracy 0.950', 8.45, 5.7, 3.8, 0.42, { fontSize: 14, color: C.orange, bold: true });
+  addText(slide, 'PILOT ONLY · 100 patients · not the full-cohort result', 8.45, 5.7, 3.8, 0.42, { fontSize: 14, color: C.orange, bold: true });
   addFooter(slide, 10);
 }
 
@@ -296,57 +296,74 @@ function addMetric(slide, x, y, value, label, color = C.teal) {
   card(slide, 9.35, 1.85, 3.05, 1.45, 'Fastest baseline', '1 kHz + 16-bit', C.teal, '85.8 s');
   card(slide, 9.35, 3.55, 3.05, 1.45, 'Best Macro-F1', '4 kHz + no extra quantization', C.orange, '0.637');
   card(slide, 9.35, 5.25, 3.05, 1.15, 'Trade-off', '4 kHz costs ≈43–48% more time', C.purple);
-  addText(slide, '942 metadata patients · 3,163 WAV · 874 labeled · split 611 / 131 / 132', 0.75, 6.62, 8.7, 0.28, { fontSize: 15, color: C.teal, bold: true });
+  addText(slide, 'Secondary binary benchmark · 874 labeled · split 611 / 131 / 132 · primary track is 3-class', 0.75, 6.62, 9.4, 0.28, { fontSize: 14, color: C.teal, bold: true });
   addFooter(slide, 11);
 }
 
 // 12. Full-data matrix
 {
   const slide = pptx.addSlide(); addTitle(slide, 'Full-data matrix: model × filter × feature', '11 · Full matrix');
-  addText(slide, 'Target fs = 1 kHz · quantization = 16-bit · seed 42 · test = 132 patients', 0.75, 1.35, 9.2, 0.3, { fontSize: 18, bold: true, color: C.navy });
+  addText(slide, '3-class primary · target fs = 1 kHz · 16-bit · seed 42 · test = 236 patients', 0.75, 1.35, 10.3, 0.3, { fontSize: 18, bold: true, color: C.navy });
   const rows = [
-    [{ text: 'Model', options: { bold: true, color: C.white, fill: { color: C.navy2 } } }, { text: 'Filter', options: { bold: true, color: C.white, fill: { color: C.navy2 } } }, { text: 'Feature', options: { bold: true, color: C.white, fill: { color: C.navy2 } } }, { text: 'Accuracy', options: { bold: true, color: C.white, fill: { color: C.navy2 } } }, { text: 'Balanced acc.', options: { bold: true, color: C.white, fill: { color: C.navy2 } } }, { text: 'Macro-F1', options: { bold: true, color: C.white, fill: { color: C.navy2 } } }],
-    ['MLP', 'None', 'MFCC', '0.848', '0.657', '0.693'],
-    ['MLP', 'None', 'Hybrid', '0.841', '0.625', '0.654'],
-    ['SVM', 'None', 'Hybrid', '0.750', '0.664', '0.648'],
-    ['SVM', 'FIR', 'Hybrid', '0.765', '0.646', '0.644'],
-    ['SVM', 'None', 'MFCC', '0.742', '0.659', '0.642'],
-    ['SVM', 'FIR', 'MFCC', '0.758', '0.628', '0.628'],
-    ['SVM', 'Butterworth', 'Hybrid', '0.742', '0.618', '0.615'],
+    [{ text: 'Model', options: { bold: true, color: C.white, fill: { color: C.navy2 } } }, { text: 'Filter', options: { bold: true, color: C.white, fill: { color: C.navy2 } } }, { text: 'Feature', options: { bold: true, color: C.white, fill: { color: C.navy2 } } }, { text: 'WAcc', options: { bold: true, color: C.white, fill: { color: C.navy2 } } }, { text: 'UAR', options: { bold: true, color: C.white, fill: { color: C.navy2 } } }, { text: 'AUROC', options: { bold: true, color: C.white, fill: { color: C.navy2 } } }, { text: 'AUPRC', options: { bold: true, color: C.white, fill: { color: C.navy2 } } }],
+    ['SVM', 'None', 'Hybrid', '0.644', '0.596', '0.775', '0.587'],
+    ['SVM', 'None', 'MFCC', '0.629', '0.571', '0.776', '0.579'],
+    ['SVM', 'Butterworth', 'Hybrid', '0.622', '0.597', '0.791', '0.585'],
+    ['SVM', 'FIR', 'Hybrid', '0.611', '0.544', '0.763', '0.558'],
+    ['SVM', 'Butterworth', 'MFCC', '0.596', '0.533', '0.759', '0.541'],
+    ['MLP', 'FIR', 'Hybrid', '0.564', '0.461', '0.793', '0.590'],
   ];
-  slide.addTable(rows, { x: 0.7, y: 1.85, w: 8.85, h: 4.75, colW: [1.15, 1.65, 1.7, 1.35, 1.65, 1.35], rowH: [0.5, 0.58, 0.58, 0.58, 0.58, 0.58, 0.58, 0.58], border: { pt: 1, color: C.line }, fill: C.white, color: C.ink, fontFace: 'Aptos', fontSize: 14, align: 'center', valign: 'mid', margin: 0.06 });
-  card(slide, 9.85, 1.85, 2.45, 1.45, 'Best Macro-F1', 'MLP + none + MFCC', C.orange, '0.693');
-  card(slide, 9.85, 3.55, 2.45, 1.45, 'Best balanced acc.', 'SVM + none + hybrid', C.teal, '0.664');
-  card(slide, 9.85, 5.25, 2.45, 1.15, 'Cảnh báo', 'Present: 9/27 đúng ở best F1', C.purple);
-  addText(slide, 'Không filter thắng trong split này; cần nhiều seed trước khi kết luận ưu thế tổng quát.', 0.75, 6.7, 8.7, 0.25, { fontSize: 15, color: C.teal, bold: true });
+  slide.addTable(rows, { x: 0.55, y: 1.85, w: 9.25, h: 4.75, colW: [1.05, 1.35, 1.4, 1.2, 1.1, 1.25, 1.25], rowH: [0.5, 0.68, 0.68, 0.68, 0.68, 0.68, 0.68], border: { pt: 1, color: C.line }, fill: C.white, color: C.ink, fontFace: 'Aptos', fontSize: 13, align: 'center', valign: 'mid', margin: 0.05 });
+  card(slide, 10.05, 1.85, 2.25, 1.45, 'Best DSP WAcc', 'SVM + none + hybrid', C.teal, '0.644');
+  card(slide, 10.05, 3.55, 2.25, 1.45, 'Best DSP AUROC', 'SVM + Butterworth + hybrid', C.orange, '0.791');
+  card(slide, 10.05, 5.25, 2.25, 1.15, 'Metric set', 'WAcc · UAR · AUROC · AUPRC', C.purple);
+  addText(slide, 'WAcc là metric primary; Macro-F1 và confusion matrix được báo cáo kèm trong report.', 0.75, 6.7, 9.0, 0.25, { fontSize: 15, color: C.teal, bold: true });
   addFooter(slide, 12);
 }
 
-// 13. Robustness
+// 13. CNN baseline and ablation
 {
-  const slide = pptx.addSlide(); addTitle(slide, 'Pilot robustness: quantization và noise', '12 · Pilot robustness');
+  const slide = pptx.addSlide(); addTitle(slide, 'MobileNetV3-Small: 3-class primary baseline', '12 · CNN filter ablation');
+  addText(slide, '942 patients · split 612 / 94 / 236 · log-STFT · mean patient aggregation · frozen pretrained backbone', 0.75, 1.35, 11.5, 0.3, { fontSize: 16, bold: true, color: C.navy });
+  const rows = [
+    [{ text: 'Filter', options: { bold: true, color: C.white, fill: { color: C.navy2 } } }, { text: 'Accuracy', options: { bold: true, color: C.white, fill: { color: C.navy2 } } }, { text: 'WAcc', options: { bold: true, color: C.white, fill: { color: C.navy2 } } }, { text: 'UAR', options: { bold: true, color: C.white, fill: { color: C.navy2 } } }, { text: 'AUROC', options: { bold: true, color: C.white, fill: { color: C.navy2 } } }, { text: 'AUPRC', options: { bold: true, color: C.white, fill: { color: C.navy2 } } }, { text: 'Macro-F1', options: { bold: true, color: C.white, fill: { color: C.navy2 } } }],
+    ['None', '0.716', '0.638', '0.620', '0.772', '0.596', '0.580'],
+    ['Butterworth', '0.737', '0.667', '0.641', '0.796', '0.629', '0.604'],
+    ['FIR', '0.682', '0.553', '0.579', '0.769', '0.581', '0.524'],
+  ];
+  slide.addTable(rows, { x: 0.45, y: 1.9, w: 9.45, h: 3.35, colW: [1.7, 1.25, 1.25, 1.2, 1.3, 1.25, 1.3], rowH: [0.55, 0.82, 0.82, 0.82], border: { pt: 1, color: C.line }, fill: C.white, color: C.ink, fontFace: 'Aptos', fontSize: 13, align: 'center', valign: 'mid', margin: 0.05 });
+  card(slide, 10.1, 1.9, 2.25, 1.35, 'Best CNN WAcc', 'Butterworth', C.teal, '0.667');
+  card(slide, 10.1, 3.5, 2.25, 1.35, 'Best AUROC', 'Butterworth', C.orange, '0.796');
+  card(slide, 10.1, 5.1, 2.25, 1.15, 'Status', 'Frozen pretrained baseline', C.purple);
+  addText(slide, 'Kết luận: Butterworth giúp MobileNet tăng WAcc và AUROC; FIR suy giảm. Chưa fine-tune toàn backbone.', 0.75, 6.0, 9.25, 0.45, { fontSize: 15, color: C.teal, bold: true });
+  addFooter(slide, 13);
+}
+
+// 14. Robustness
+{
+  const slide = pptx.addSlide(); addTitle(slide, 'Pilot robustness: quantization và noise', '13 · Pilot robustness');
   addImage(slide, 'circor_100_robustness.png', 0.7, 1.45, 8.0, 4.25);
   card(slide, 9.05, 1.55, 3.15, 1.15, 'Sampling 1/2/4 kHz', 'Metric gần như không đổi', C.teal, '0.928');
   card(slide, 9.05, 2.95, 3.15, 1.15, 'Quantization 8-bit', 'Mất độ phân giải biên độ', C.orange, '0.732');
   card(slide, 9.05, 4.35, 3.15, 1.15, 'Pink / impulse noise', 'Suy giảm mạnh hơn white noise', C.purple, '0.796');
   addText(slide, 'Interpretation: giữ đúng dải tần là cần thiết, nhưng bit depth và loại nhiễu quyết định độ bền của feature.', 0.85, 6.1, 11.6, 0.45, { fontSize: 18, color: C.navy, bold: true, align: 'center' });
-  addFooter(slide, 13);
+  addFooter(slide, 14);
 }
 
-// 14. Signal-level
+// 15. Signal-level
 {
-  const slide = pptx.addSlide(); addTitle(slide, 'Signal-level analysis: từ waveform đến spectrogram', '11 · Signal + image');
+  const slide = pptx.addSlide(); addTitle(slide, 'Signal-level analysis: từ waveform đến spectrogram', '14 · Signal + image');
   addImage(slide, 'circor_100_signal_report/signal_report.png', 0.65, 1.45, 7.3, 4.55);
   slide.addShape(pptx.ShapeType.rect, { x: 8.35, y: 1.55, w: 4.0, h: 4.35, rectRadius: 0.08, fill: { color: C.white }, line: { color: C.line, width: 1 } });
   addText(slide, 'Cách đọc hình', 8.7, 1.9, 3.2, 0.35, { fontSize: 22, bold: true, color: C.navy });
   addBullets(slide, ['Waveform: transient và nhịp tim', 'FFT: thành phần tần số', 'PSD: năng lượng theo band', 'STFT: năng lượng thay đổi theo thời gian', 'Spectrogram là biểu diễn 2D cho phần Image Processing'], 8.7, 2.55, 3.1, 2.35, 15);
   addText(slide, 'Điểm nhấn: model không chỉ “nhìn” raw audio; nó sử dụng các đặc trưng được giải thích bằng DSP.', 8.7, 5.18, 3.1, 0.55, { fontSize: 15, color: C.teal, bold: true });
-  addFooter(slide, 14);
+  addFooter(slide, 15);
 }
 
-// 15. FE demo
+// 16. FE demo
 {
-  const slide = pptx.addSlide(); addTitle(slide, 'FE demo và kịch bản trình diễn', '12 · Demo');
+  const slide = pptx.addSlide(); addTitle(slide, 'FE demo và kịch bản trình diễn', '15 · Demo');
   const steps = [['1', 'Upload WAV', 'Chọn một recording PCG', C.teal], ['2', 'Analyze', 'Chạy đúng DSP pipeline', C.orange], ['3', 'Inspect', 'Waveform · FFT · PSD · STFT', C.purple], ['4', 'Decide', 'Label + probabilities', C.mint]];
   steps.forEach((s, i) => {
     const x = 0.75 + i * 3.02;
@@ -360,22 +377,22 @@ function addMetric(slide, x, y, value, label, color = C.teal) {
   addImage(slide, 'circor_100_signal_report/signal_report.png', 0.75, 3.75, 5.95, 2.55);
   slide.addShape(pptx.ShapeType.rect, { x: 7.05, y: 3.75, w: 5.15, h: 2.55, rectRadius: 0.08, fill: { color: C.navy2 }, line: { color: C.navy2 } });
   addText(slide, 'Kịch bản nói', 7.4, 4.05, 4.3, 0.3, { fontSize: 21, bold: true, color: C.white });
-  addBullets(slide, ['“Đây là raw PCG và các biểu diễn sau DSP.”', '“Tôi đổi 16-bit sang 8-bit để kiểm tra robustness.”', '“Model đã train trước; FE chỉ inference, không train lại.”', '“Đây là research prototype, không phải diagnosis.”'], 7.4, 4.62, 4.3, 1.25, 15, 'E6FFFB');
-  addFooter(slide, 15);
+  addBullets(slide, ['“Đây là raw PCG và các biểu diễn sau DSP.”', '“Tôi đổi 16-bit sang 8-bit để kiểm tra robustness.”', '“FE mặc định dùng SVM; CNN chỉ là benchmark, chưa tích hợp vào app.”', '“Đây là research prototype, không phải diagnosis.”'], 7.4, 4.62, 4.3, 1.25, 15, 'E6FFFB');
+  addFooter(slide, 16);
 }
 
-// 14. Limitations/conclusion
+// 17. Limitations/conclusion
 {
   const slide = pptx.addSlide();
   slide.background = { color: C.navy };
   addText(slide, 'KẾT LUẬN', 0.75, 0.65, 4.5, 0.3, { fontSize: 13, bold: true, color: '8FE3D8', charSpacing: 1.5 });
   addText(slide, 'DSP front-end quyết định\nđộ bền của hệ thống.', 0.75, 1.25, 6.0, 1.3, { fontSize: 36, bold: true, color: C.white, breakLine: true });
-  addBullets(slide, ['Full benchmark: 1 kHz nhanh nhất; 4 kHz + none đạt Macro-F1 0.637 trong split hiện tại.', '4 kHz tốn thêm khoảng 43–48% thời gian; chênh lệch điểm cần kiểm chứng nhiều seed.', 'Pipeline, model bundle và Streamlit FE đã chạy end-to-end.', 'Bước tiếp theo: nhiều seed, segmentation-aware features, calibration.'], 0.82, 3.15, 6.2, 2.25, 18, 'D7E5EE');
+  addBullets(slide, ['Primary: MobileNet + Butterworth đạt WAcc 0.667 · UAR 0.641 · AUROC 0.796 · AUPRC 0.629.', 'DSP-only tốt nhất: SVM + none + hybrid đạt WAcc 0.644.', 'Binary DSP matrix (MLP MFCC Macro-F1 0.693) chỉ là ablation phụ.', 'Pipeline, model bundle và Streamlit FE đã chạy end-to-end.'], 0.82, 3.15, 6.2, 2.25, 16, 'D7E5EE');
   slide.addShape(pptx.ShapeType.rect, { x: 7.65, y: 1.25, w: 4.6, h: 3.95, rectRadius: 0.08, fill: { color: '17324D' }, line: { color: '2C526F', width: 1 } });
   addText(slide, 'Hạn chế cần nói rõ', 8.05, 1.65, 3.8, 0.3, { fontSize: 21, bold: true, color: 'FDBA74' });
-  addBullets(slide, ['Public training release 942 bệnh nhân', 'Test set 132 bệnh nhân · seed 42', 'Chưa clinical validation', 'Chưa cycle-level segmentation'], 8.05, 2.25, 3.5, 1.75, 16, 'D7E5EE');
+  addBullets(slide, ['Public split 942 bệnh nhân · test 236', 'Official hidden test chưa tái lập được', 'Chưa clinical validation', 'Chưa cycle-level segmentation'], 8.05, 2.25, 3.5, 1.75, 16, 'D7E5EE');
   addText(slide, 'Cảm ơn · Q&A', 7.65, 5.85, 4.6, 0.55, { fontSize: 27, bold: true, color: '8FE3D8', align: 'center' });
-  addFooter(slide, 16);
+  addFooter(slide, 17);
 }
 
 pptx.writeFile({ fileName: output });

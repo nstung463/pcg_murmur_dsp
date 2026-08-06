@@ -21,6 +21,17 @@ patient stay in the same partition. This prevents the common leakage where the
 same pediatric patient appears in both train and test through different
 auscultation locations.
 
+## Challenge-aligned evaluation (optional)
+
+The main DSP matrix intentionally evaluates binary `Absent` versus `Present`
+labels. To run a public-data approximation of the PhysioNet three-class
+protocol, use `configs/challenge_aligned.yaml`. It keeps `Unknown`, uses a
+65/10/25 patient-wise split, and adds `weighted_accuracy`, `uar` (macro recall),
+macro one-vs-rest AUROC and macro AUPRC to `metrics.json` when all three classes
+are present. This is comparable to research public-split results only after
+matching their cohort, split, windowing and patient aggregation; it cannot
+reproduce the official hidden-test leaderboard.
+
 ## Setup
 
 Use Python 3.11 on Windows:
@@ -159,9 +170,20 @@ Cartesian product:
 5. white, pink and impulsive noise at multiple SNR values;
 6. ablations removing each DSP component individually.
 
-The current neural baseline is an `MLPClassifier`, chosen to keep the full
-experiment reproducible on CPU. A spectrogram CNN can be added later without
-changing the manifest or DSP interfaces.
+The current neural baselines include the CPU-friendly `MLPClassifier` and an
+optional MobileNetV3-Small transfer-learning experiment. The CNN converts each
+3-second window to a log-STFT image, freezes the pretrained feature extractor,
+trains a binary head, and averages window probabilities at patient level. It
+uses the same 611/131/132 patient split as the DSP matrix; see
+`artifacts/cnn_mobilenet_full/metrics.json` and
+`artifacts/cnn_mobilenet_full/README.md`. Install the optional dependencies
+with `pip install -e ".[cnn]"` before running
+`scripts/run_cnn_mobilenet.py`.
+On the full cohort this lightweight CNN reached Macro-F1 `0.7054` and
+Balanced Accuracy `0.7111` without a filter; the same setup with Butterworth
+reached Macro-F1 `0.6756`, so the filter effect is reported as an ablation.
+The follow-up aggregation, threshold, fine-tuning and fixed-split seed study is
+summarized in `artifacts/cnn_ablation_summary.md`.
 
 The current real-data verification uses a direct-download subset because the
 large PhysioNet ZIP endpoint can be heavily throttled. The expanded verified

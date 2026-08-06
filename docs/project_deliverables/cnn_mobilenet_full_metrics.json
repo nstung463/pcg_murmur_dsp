@@ -1,0 +1,91 @@
+{
+  "model": "MobileNetV3-Small",
+  "pretrained": true,
+  "freeze_backbone": true,
+  "image_size": 128,
+  "max_windows_per_recording": 2,
+  "parameters": 1519906,
+  "device": "cpu",
+  "target_fs": 1000,
+  "filter": "none",
+  "quantization_bits": 16,
+  "n_train_windows": 4196,
+  "n_validation_windows": 880,
+  "n_test_windows": 938,
+  "n_train_patients": 611,
+  "n_validation_patients": 131,
+  "n_test_patients": 132,
+  "prep_seconds": 9.05438920000006,
+  "train_seconds": 68.21362090000002,
+  "epochs_completed": 5,
+  "test": {
+    "n_patients": 132,
+    "accuracy": 0.803030303030303,
+    "balanced_accuracy": 0.7111111111111111,
+    "precision_macro": 0.7003682624707064,
+    "recall_macro": 0.7111111111111111,
+    "f1_macro": 0.7053571428571428,
+    "confusion_matrix": [
+      [
+        91,
+        14
+      ],
+      [
+        12,
+        15
+      ]
+    ]
+  },
+  "history": [
+    {
+      "epoch": 1,
+      "loss": 0.6461500236482332,
+      "val_n_patients": 131,
+      "val_accuracy": 0.3282442748091603,
+      "val_balanced_accuracy": 0.5220797720797721,
+      "val_precision_macro": 0.5241433021806854,
+      "val_recall_macro": 0.5220797720797721,
+      "val_f1_macro": 0.3278917910447761
+    },
+    {
+      "epoch": 2,
+      "loss": 0.5943051698532972,
+      "val_n_patients": 131,
+      "val_accuracy": 0.6183206106870229,
+      "val_balanced_accuracy": 0.6636396011396011,
+      "val_precision_macro": 0.6072595704948647,
+      "val_recall_macro": 0.6636396011396011,
+      "val_f1_macro": 0.57687338501292
+    },
+    {
+      "epoch": 3,
+      "loss": 0.5730516170010422,
+      "val_n_patients": 131,
+      "val_accuracy": 0.6183206106870229,
+      "val_balanced_accuracy": 0.6636396011396011,
+      "val_precision_macro": 0.6072595704948647,
+      "val_recall_macro": 0.6636396011396011,
+      "val_f1_macro": 0.57687338501292
+    },
+    {
+      "epoch": 4,
+      "loss": 0.5610693151300604,
+      "val_n_patients": 131,
+      "val_accuracy": 0.7938931297709924,
+      "val_balanced_accuracy": 0.691951566951567,
+      "val_precision_macro": 0.6868932038834952,
+      "val_recall_macro": 0.691951566951567,
+      "val_f1_macro": 0.6893280632411067
+    },
+    {
+      "epoch": 5,
+      "loss": 0.5508368579727231,
+      "val_n_patients": 131,
+      "val_accuracy": 0.8244274809160306,
+      "val_balanced_accuracy": 0.7248931623931625,
+      "val_precision_macro": 0.7313186813186813,
+      "val_recall_macro": 0.7248931623931625,
+      "val_f1_macro": 0.7279949444795522
+    }
+  ]
+}

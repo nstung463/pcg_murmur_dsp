@@ -7,3 +7,19 @@ Final presentation and report files for the DSP501 PCG murmur detection project.
 - `final_report_dsp501.docx` — editable final report
 - `final_report_dsp501.pdf` — final report for quick reading
 - `final_report_dsp501.txt` — plain-text report export
+- `cnn_ablation_summary.md` — CNN aggregation, threshold, fine-tuning and seed-stability results
+- `cnn_mobilenet_full_metrics.json` — original frozen MobileNetV3-Small run
+- `cnn_ablation_median_seed42_metrics.json` — tuned median-aggregation CNN run
+
+The report and presentation now include the full-cohort DSP matrix, native
+sampling/quantization benchmark, lightweight CNN baseline, aggregation and
+threshold ablations, partial fine-tuning comparison, and fixed-split seed
+stability. CNN results use all 874 labeled patients but at most two windows per
+recording; the MobileNet backbone is frozen in the recommended configuration.
+The optional challenge-aligned track is documented in
+`challenge_aligned_evaluation.md` and must not be mixed with the binary DSP
+matrix or interpreted as a hidden-test leaderboard submission.
+The standardized binary DSP plus pretrained-CNN comparison is documented in
+`benchmark_matrix_standardized.md`.
+The challenge-aligned three-class full matrix is in
+`challenge_aligned_full_matrix.md`.
