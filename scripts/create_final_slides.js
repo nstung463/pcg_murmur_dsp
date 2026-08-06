@@ -145,7 +145,7 @@ function addMetric(slide, x, y, value, label, color = C.teal) {
   slide.addChart(pptx.ChartType.bar, [{ name: 'Patients', labels: ['Absent', 'Present', 'Unknown'], values: [695, 179, 68] }], { x: 0.75, y: 2.65, w: 5.2, h: 3.35, catAxisLabelFontFace: 'Aptos', catAxisLabelFontSize: 13, valAxisLabelFontSize: 11, valAxisMinVal: 0, valAxisMaxVal: 720, valGridLine: { color: 'E2E8F0', width: 1 }, chartColors: [C.teal], showLegend: false, showTitle: false, showValue: true, dataLabelColor: C.ink, dataLabelPosition: 'outEnd', showCatName: false, showValAxisTitle: false, showCatAxisTitle: false, showBorder: false });
   slide.addShape(pptx.ShapeType.rect, { x: 6.45, y: 2.65, w: 5.8, h: 3.35, rectRadius: 0.08, fill: { color: C.white }, line: { color: C.line, width: 1 } });
   addText(slide, 'Patient-wise label handling', 6.8, 2.98, 4.8, 0.35, { fontSize: 20, bold: true, color: C.navy });
-  addBullets(slide, ['Absent: 695 patients', 'Present: 179 patients', 'Unknown: 68 patients', '874 labeled patients dùng cho supervised training'], 6.8, 3.55, 4.85, 1.7, 16);
+  addBullets(slide, ['Absent: 695 patients', 'Present: 179 patients', 'Unknown: 68 patients', 'Primary track giữ đủ 942 patients', 'Binary ablation: 874 patients'], 6.8, 3.45, 4.85, 2.05, 15);
   addText(slide, 'Dataset source: PhysioNet CirCor DigiScope 1.0.3', 6.8, 5.55, 4.9, 0.25, { fontSize: 13, color: C.teal, italic: true });
   addFooter(slide, 3);
 }
@@ -239,10 +239,10 @@ function addMetric(slide, x, y, value, label, color = C.teal) {
   recs.forEach((r, i) => { const x = 1.05 + i * 1.1; slide.addShape(pptx.ShapeType.rect, { x, y: 2.35, w: 0.85, h: 0.65, rectRadius: 0.04, fill: { color: r[1] }, line: { color: r[1] } }); addText(slide, r[0], x, 2.56, 0.85, 0.18, { fontSize: 16, bold: true, color: C.white, align: 'center' }); });
   addText(slide, 'PATIENT 13918', 1.15, 3.25, 3.95, 0.3, { fontSize: 18, bold: true, color: C.teal, align: 'center' });
   slide.addShape(pptx.ShapeType.line, { x: 3.0, y: 3.0, w: 0, h: 0.2, line: { color: C.teal, width: 2, endArrowType: 'triangle' } });
-  const splits = [['Train\n611', C.teal], ['Validation\n131', C.orange], ['Test\n132', C.purple]];
+  const splits = [['Train\n612', C.teal], ['Validation\n94', C.orange], ['Test\n236', C.purple]];
   splits.forEach((s, i) => { const x = 6.2 + i * 2.05; slide.addShape(pptx.ShapeType.rect, { x, y: 2.1, w: 1.65, h: 1.45, rectRadius: 0.06, fill: { color: s[1] }, line: { color: s[1] } }); addText(slide, s[0], x + 0.1, 2.47, 1.45, 0.55, { fontSize: 22, bold: true, color: C.white, align: 'center', breakLine: true }); });
   slide.addShape(pptx.ShapeType.line, { x: 5.25, y: 2.82, w: 0.85, h: 0, line: { color: C.muted, width: 1.5, endArrowType: 'triangle' } });
-  addText(slide, 'Tất cả location của cùng patient nằm trong cùng một partition.', 6.25, 4.25, 5.65, 0.55, { fontSize: 19, color: C.navy, bold: true, align: 'center' });
+  addText(slide, 'Primary challenge-aligned split: 65 / 10 / 25 · 612 / 94 / 236 patients.', 6.25, 4.25, 5.65, 0.55, { fontSize: 17, color: C.navy, bold: true, align: 'center' });
   addText(slide, 'Nếu split theo recording, model có thể học “dấu vân tay” của patient thay vì murmur.', 1.0, 5.45, 11.2, 0.45, { fontSize: 19, color: C.orange, bold: true, align: 'center' });
   addFooter(slide, 8);
 }
@@ -258,7 +258,7 @@ function addMetric(slide, x, y, value, label, color = C.teal) {
     ['FIR', 'SVM/MLP', 'SVM/MLP', 'SVM/MLP', 'SVM/MLP'],
   ];
   slide.addTable(rows, { x: 1.05, y: 2.25, w: 8.1, h: 2.65, colW: [2.0, 1.5, 1.5, 1.5, 1.6], rowH: [0.55, 0.7, 0.7, 0.7], border: { pt: 1, color: C.line }, fill: C.white, color: C.ink, fontFace: 'Aptos', fontSize: 17, align: 'center', valign: 'mid', margin: 0.08, bold: false });
-  card(slide, 9.75, 2.15, 2.2, 1.4, 'Primary metric', 'Macro-F1', C.teal, 'F1');
+  card(slide, 9.75, 2.15, 2.2, 1.4, 'Primary metric', 'Weighted Accuracy', C.teal, 'WAcc');
   card(slide, 9.75, 3.85, 2.2, 1.4, 'Split', 'Patient-wise', C.orange, 'P');
   card(slide, 9.75, 5.55, 2.2, 1.0, 'Seeds', '42 · fixed', C.purple);
   addText(slide, 'Mỗi run lưu model bundle + config + metrics.json để tái lập inference.', 1.05, 5.55, 8.1, 0.45, { fontSize: 17, color: C.teal, bold: true, align: 'center' });
@@ -296,49 +296,46 @@ function addMetric(slide, x, y, value, label, color = C.teal) {
   card(slide, 9.35, 1.85, 3.05, 1.45, 'Fastest baseline', '1 kHz + 16-bit', C.teal, '85.8 s');
   card(slide, 9.35, 3.55, 3.05, 1.45, 'Best Macro-F1', '4 kHz + no extra quantization', C.orange, '0.637');
   card(slide, 9.35, 5.25, 3.05, 1.15, 'Trade-off', '4 kHz costs ≈43–48% more time', C.purple);
-  addText(slide, '942 metadata patients · 3,163 WAV · 874 labeled · split 611 / 131 / 132', 0.75, 6.62, 8.7, 0.28, { fontSize: 15, color: C.teal, bold: true });
+  addText(slide, 'Secondary binary benchmark · 874 labeled · split 611 / 131 / 132 · primary track is 3-class', 0.75, 6.62, 9.4, 0.28, { fontSize: 14, color: C.teal, bold: true });
   addFooter(slide, 11);
 }
 
 // 12. Full-data matrix
 {
   const slide = pptx.addSlide(); addTitle(slide, 'Full-data matrix: model × filter × feature', '11 · Full matrix');
-  addText(slide, 'Target fs = 1 kHz · quantization = 16-bit · seed 42 · test = 132 patients', 0.75, 1.35, 9.2, 0.3, { fontSize: 18, bold: true, color: C.navy });
+  addText(slide, '3-class primary · target fs = 1 kHz · 16-bit · seed 42 · test = 236 patients', 0.75, 1.35, 10.3, 0.3, { fontSize: 18, bold: true, color: C.navy });
   const rows = [
-    [{ text: 'Model', options: { bold: true, color: C.white, fill: { color: C.navy2 } } }, { text: 'Filter', options: { bold: true, color: C.white, fill: { color: C.navy2 } } }, { text: 'Feature', options: { bold: true, color: C.white, fill: { color: C.navy2 } } }, { text: 'Accuracy', options: { bold: true, color: C.white, fill: { color: C.navy2 } } }, { text: 'Balanced acc.', options: { bold: true, color: C.white, fill: { color: C.navy2 } } }, { text: 'Macro-F1', options: { bold: true, color: C.white, fill: { color: C.navy2 } } }],
-    ['MLP', 'None', 'MFCC', '0.848', '0.657', '0.693'],
-    ['MLP', 'None', 'Hybrid', '0.841', '0.625', '0.654'],
-    ['SVM', 'None', 'Hybrid', '0.750', '0.664', '0.648'],
-    ['SVM', 'FIR', 'Hybrid', '0.765', '0.646', '0.644'],
-    ['SVM', 'None', 'MFCC', '0.742', '0.659', '0.642'],
-    ['SVM', 'FIR', 'MFCC', '0.758', '0.628', '0.628'],
-    ['SVM', 'Butterworth', 'Hybrid', '0.742', '0.618', '0.615'],
+    [{ text: 'Model', options: { bold: true, color: C.white, fill: { color: C.navy2 } } }, { text: 'Filter', options: { bold: true, color: C.white, fill: { color: C.navy2 } } }, { text: 'Feature', options: { bold: true, color: C.white, fill: { color: C.navy2 } } }, { text: 'WAcc', options: { bold: true, color: C.white, fill: { color: C.navy2 } } }, { text: 'UAR', options: { bold: true, color: C.white, fill: { color: C.navy2 } } }, { text: 'AUROC', options: { bold: true, color: C.white, fill: { color: C.navy2 } } }, { text: 'AUPRC', options: { bold: true, color: C.white, fill: { color: C.navy2 } } }],
+    ['SVM', 'None', 'Hybrid', '0.644', '0.596', '0.775', '0.587'],
+    ['SVM', 'None', 'MFCC', '0.629', '0.571', '0.776', '0.579'],
+    ['SVM', 'Butterworth', 'Hybrid', '0.622', '0.597', '0.791', '0.585'],
+    ['SVM', 'FIR', 'Hybrid', '0.611', '0.544', '0.763', '0.558'],
+    ['SVM', 'Butterworth', 'MFCC', '0.596', '0.533', '0.759', '0.541'],
+    ['MLP', 'FIR', 'Hybrid', '0.564', '0.461', '0.793', '0.590'],
   ];
-  slide.addTable(rows, { x: 0.7, y: 1.85, w: 8.85, h: 4.75, colW: [1.15, 1.65, 1.7, 1.35, 1.65, 1.35], rowH: [0.5, 0.58, 0.58, 0.58, 0.58, 0.58, 0.58, 0.58], border: { pt: 1, color: C.line }, fill: C.white, color: C.ink, fontFace: 'Aptos', fontSize: 14, align: 'center', valign: 'mid', margin: 0.06 });
-  card(slide, 9.85, 1.85, 2.45, 1.45, 'Best Macro-F1', 'MLP + none + MFCC', C.orange, '0.693');
-  card(slide, 9.85, 3.55, 2.45, 1.45, 'Best balanced acc.', 'SVM + none + hybrid', C.teal, '0.664');
-  card(slide, 9.85, 5.25, 2.45, 1.15, 'Cảnh báo', 'Present: 9/27 đúng ở best F1', C.purple);
-  addText(slide, 'Không filter thắng trong split này; cần nhiều seed trước khi kết luận ưu thế tổng quát.', 0.75, 6.7, 8.7, 0.25, { fontSize: 15, color: C.teal, bold: true });
+  slide.addTable(rows, { x: 0.55, y: 1.85, w: 9.25, h: 4.75, colW: [1.05, 1.35, 1.4, 1.2, 1.1, 1.25, 1.25], rowH: [0.5, 0.68, 0.68, 0.68, 0.68, 0.68, 0.68], border: { pt: 1, color: C.line }, fill: C.white, color: C.ink, fontFace: 'Aptos', fontSize: 13, align: 'center', valign: 'mid', margin: 0.05 });
+  card(slide, 10.05, 1.85, 2.25, 1.45, 'Best DSP WAcc', 'SVM + none + hybrid', C.teal, '0.644');
+  card(slide, 10.05, 3.55, 2.25, 1.45, 'Best DSP AUROC', 'SVM + Butterworth + hybrid', C.orange, '0.791');
+  card(slide, 10.05, 5.25, 2.25, 1.15, 'Metric set', 'WAcc · UAR · AUROC · AUPRC', C.purple);
+  addText(slide, 'WAcc là metric primary; Macro-F1 và confusion matrix được báo cáo kèm trong report.', 0.75, 6.7, 9.0, 0.25, { fontSize: 15, color: C.teal, bold: true });
   addFooter(slide, 12);
 }
 
 // 13. CNN baseline and ablation
 {
-  const slide = pptx.addSlide(); addTitle(slide, 'CNN nhẹ: MobileNetV3-Small + log-STFT', '12 · CNN ablation');
-  addText(slide, '874 labeled patients · same patient-wise split · 2 windows/recording · frozen pretrained backbone', 0.75, 1.35, 11.5, 0.3, { fontSize: 17, bold: true, color: C.navy });
+  const slide = pptx.addSlide(); addTitle(slide, 'MobileNetV3-Small: 3-class primary baseline', '12 · CNN filter ablation');
+  addText(slide, '942 patients · split 612 / 94 / 236 · log-STFT · mean patient aggregation · frozen pretrained backbone', 0.75, 1.35, 11.5, 0.3, { fontSize: 16, bold: true, color: C.navy });
   const rows = [
-    [{ text: 'Aggregation / training', options: { bold: true, color: C.white, fill: { color: C.navy2 } } }, { text: 'Accuracy', options: { bold: true, color: C.white, fill: { color: C.navy2 } } }, { text: 'Balanced acc.', options: { bold: true, color: C.white, fill: { color: C.navy2 } } }, { text: 'Macro-F1', options: { bold: true, color: C.white, fill: { color: C.navy2 } } }],
-    ['Mean + tuned threshold', '0.841', '0.666', '0.697'],
-    ['Median + tuned threshold', '0.833', '0.689', '0.710'],
-    ['Top-25% windows', '0.765', '0.660', '0.653'],
-    ['Max window', '0.667', '0.543', '0.536'],
-    ['Median + last block fine-tuned', '0.841', '0.680', '0.708'],
+    [{ text: 'Filter', options: { bold: true, color: C.white, fill: { color: C.navy2 } } }, { text: 'Accuracy', options: { bold: true, color: C.white, fill: { color: C.navy2 } } }, { text: 'WAcc', options: { bold: true, color: C.white, fill: { color: C.navy2 } } }, { text: 'UAR', options: { bold: true, color: C.white, fill: { color: C.navy2 } } }, { text: 'AUROC', options: { bold: true, color: C.white, fill: { color: C.navy2 } } }, { text: 'AUPRC', options: { bold: true, color: C.white, fill: { color: C.navy2 } } }, { text: 'Macro-F1', options: { bold: true, color: C.white, fill: { color: C.navy2 } } }],
+    ['None', '0.716', '0.638', '0.620', '0.772', '0.596', '0.580'],
+    ['Butterworth', '0.737', '0.667', '0.641', '0.796', '0.629', '0.604'],
+    ['FIR', '0.682', '0.553', '0.579', '0.769', '0.581', '0.524'],
   ];
-  slide.addTable(rows, { x: 0.75, y: 1.9, w: 8.2, h: 3.9, colW: [3.55, 1.35, 1.55, 1.35], rowH: [0.55, 0.66, 0.66, 0.66, 0.66, 0.66], border: { pt: 1, color: C.line }, fill: C.white, color: C.ink, fontFace: 'Aptos', fontSize: 15, align: 'center', valign: 'mid', margin: 0.06 });
-  card(slide, 9.35, 1.9, 3.05, 1.35, 'Best CNN Macro-F1', 'Median aggregation', C.teal, '0.710');
-  card(slide, 9.35, 3.5, 3.05, 1.35, 'Threshold', 'Tuned on validation only', C.orange, '0.62');
-  card(slide, 9.35, 5.1, 3.05, 1.15, 'Seed stability', 'Macro-F1 0.688 ± 0.025', C.purple);
-  addText(slide, 'Kết luận: median ổn định hơn; max/top-25% overreact với window bất thường; unfreeze block cuối không đem lại lợi ích rõ.', 0.75, 6.35, 8.25, 0.45, { fontSize: 15, color: C.teal, bold: true });
+  slide.addTable(rows, { x: 0.45, y: 1.9, w: 9.45, h: 3.35, colW: [1.7, 1.25, 1.25, 1.2, 1.3, 1.25, 1.3], rowH: [0.55, 0.82, 0.82, 0.82], border: { pt: 1, color: C.line }, fill: C.white, color: C.ink, fontFace: 'Aptos', fontSize: 13, align: 'center', valign: 'mid', margin: 0.05 });
+  card(slide, 10.1, 1.9, 2.25, 1.35, 'Best CNN WAcc', 'Butterworth', C.teal, '0.667');
+  card(slide, 10.1, 3.5, 2.25, 1.35, 'Best AUROC', 'Butterworth', C.orange, '0.796');
+  card(slide, 10.1, 5.1, 2.25, 1.15, 'Status', 'Frozen pretrained baseline', C.purple);
+  addText(slide, 'Kết luận: Butterworth giúp MobileNet tăng WAcc và AUROC; FIR suy giảm. Chưa fine-tune toàn backbone.', 0.75, 6.0, 9.25, 0.45, { fontSize: 15, color: C.teal, bold: true });
   addFooter(slide, 13);
 }
 
@@ -390,10 +387,10 @@ function addMetric(slide, x, y, value, label, color = C.teal) {
   slide.background = { color: C.navy };
   addText(slide, 'KẾT LUẬN', 0.75, 0.65, 4.5, 0.3, { fontSize: 13, bold: true, color: '8FE3D8', charSpacing: 1.5 });
   addText(slide, 'DSP front-end quyết định\nđộ bền của hệ thống.', 0.75, 1.25, 6.0, 1.3, { fontSize: 36, bold: true, color: C.white, breakLine: true });
-  addBullets(slide, ['Full benchmark: 1 kHz nhanh nhất; 4 kHz + none đạt Macro-F1 0.637 trong split hiện tại.', 'CNN frozen + median aggregation đạt Macro-F1 0.710; seed stability khoảng 0.688 ± 0.025.', 'Pipeline, model bundle và Streamlit FE đã chạy end-to-end.', 'Bước tiếp theo: segmentation-aware features và calibration.'], 0.82, 3.15, 6.2, 2.25, 18, 'D7E5EE');
+  addBullets(slide, ['Primary: MobileNet + Butterworth đạt WAcc 0.667 · UAR 0.641 · AUROC 0.796 · AUPRC 0.629.', 'DSP-only tốt nhất: SVM + none + hybrid đạt WAcc 0.644.', 'Binary DSP matrix (MLP MFCC Macro-F1 0.693) chỉ là ablation phụ.', 'Pipeline, model bundle và Streamlit FE đã chạy end-to-end.'], 0.82, 3.15, 6.2, 2.25, 16, 'D7E5EE');
   slide.addShape(pptx.ShapeType.rect, { x: 7.65, y: 1.25, w: 4.6, h: 3.95, rectRadius: 0.08, fill: { color: '17324D' }, line: { color: '2C526F', width: 1 } });
   addText(slide, 'Hạn chế cần nói rõ', 8.05, 1.65, 3.8, 0.3, { fontSize: 21, bold: true, color: 'FDBA74' });
-  addBullets(slide, ['Public training release 942 bệnh nhân', 'Test set 132 bệnh nhân · seed 42', 'Chưa clinical validation', 'Chưa cycle-level segmentation'], 8.05, 2.25, 3.5, 1.75, 16, 'D7E5EE');
+  addBullets(slide, ['Public split 942 bệnh nhân · test 236', 'Official hidden test chưa tái lập được', 'Chưa clinical validation', 'Chưa cycle-level segmentation'], 8.05, 2.25, 3.5, 1.75, 16, 'D7E5EE');
   addText(slide, 'Cảm ơn · Q&A', 7.65, 5.85, 4.6, 0.55, { fontSize: 27, bold: true, color: '8FE3D8', align: 'center' });
   addFooter(slide, 17);
 }
