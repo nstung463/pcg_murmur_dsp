@@ -197,7 +197,7 @@ function addMetric(slide, x, y, value, label, color = C.teal) {
 {
   const slide = pptx.addSlide(); addTitle(slide, 'Pipeline DSP end-to-end', '05 · Method');
   const nodes = [
-    ['WAV', 'read + mono', C.navy2], ['Resample', '1/2/4 kHz', C.teal], ['Quantize', '8/12/16 bit', C.orange], ['Filter', '25–400 Hz', C.purple], ['Segment', '3 s / 1.5 s', C.mint], ['Features', 'FFT · PSD · STFT · MFCC', C.teal], ['Model', 'SVM / MLP', C.orange], ['Output', 'label + probability', C.navy2],
+    ['WAV', 'read + mono', C.navy2], ['Resample', '1/2/4 kHz', C.teal], ['Quantize', '8/12/16 bit', C.orange], ['Filter', '25–400 Hz', C.purple], ['Segment', '3 s / 1.5 s', C.mint], ['Features', 'FFT · PSD · STFT · MFCC', C.teal], ['Model', 'SVM / MLP / CNN', C.orange], ['Output', 'label + probability', C.navy2],
   ];
   const x0 = 0.55; const gap = 0.12; const nw = 1.48; const y = 2.35;
   nodes.forEach((n, i) => {
@@ -227,7 +227,7 @@ function addMetric(slide, x, y, value, label, color = C.teal) {
   addText(slide, 'STFT tạo ma trận 2D time–frequency; đây là cầu nối tự nhiên sang Image Processing.', 1.08, 5.05, 4.65, 0.62, { fontSize: 15, color: 'D7E5EE', italic: true });
   const feats = [['Stats', 'RMS · skew · kurtosis'], ['PSD', 'Band powers · entropy'], ['FFT', 'Peak frequencies'], ['MFCC', '13 coefficients'], ['Hybrid', 'Kết hợp toàn bộ'],];
   feats.forEach((f, i) => card(slide, 6.8 + (i % 2) * 2.85, 1.55 + Math.floor(i / 2) * 1.4, 2.55, 1.05, f[0], f[1], [C.teal, C.orange, C.purple, C.mint, C.navy2][i]));
-  addText(slide, 'Không dùng CNN trong baseline: giữ mục tiêu là phân tích tác động DSP và tái lập CPU.', 6.85, 5.85, 5.2, 0.45, { fontSize: 16, color: C.orange, bold: true });
+  addText(slide, 'MobileNet pretrained frozen được giữ như baseline phụ; SVM/MLP vẫn là core DSP.', 6.85, 5.85, 5.2, 0.45, { fontSize: 16, color: C.orange, bold: true });
   addFooter(slide, 7);
 }
 
@@ -322,31 +322,49 @@ function addMetric(slide, x, y, value, label, color = C.teal) {
   addFooter(slide, 12);
 }
 
-// 13. Robustness
+// 13. Pretrained MobileNet baseline (binary secondary)
 {
-  const slide = pptx.addSlide(); addTitle(slide, 'Pilot robustness: quantization và noise', '12 · Pilot robustness');
+  const slide = pptx.addSlide(); addTitle(slide, 'Pretrained MobileNetV3-Small', '12 · CNN secondary baseline');
+  addText(slide, 'Binary Absent/Present · 1 kHz · 16-bit · seed 42 · split 611 / 131 / 132 · frozen ImageNet backbone', 0.75, 1.35, 11.7, 0.3, { fontSize: 16, bold: true, color: C.navy });
+  const rows = [
+    [{ text: 'Filter', options: { bold: true, color: C.white, fill: { color: C.navy2 } } }, { text: 'Accuracy', options: { bold: true, color: C.white, fill: { color: C.navy2 } } }, { text: 'Balanced acc.', options: { bold: true, color: C.white, fill: { color: C.navy2 } } }, { text: 'Macro-F1', options: { bold: true, color: C.white, fill: { color: C.navy2 } } }],
+    ['None', '0.841', '0.749', '0.752'],
+    ['Butterworth', '0.826', '0.698', '0.712'],
+    ['FIR', '0.864', '0.777', '0.784'],
+  ];
+  slide.addTable(rows, { x: 0.75, y: 1.95, w: 8.3, h: 3.45, colW: [2.8, 1.7, 2.0, 1.8], rowH: [0.58, 0.82, 0.82, 0.82], border: { pt: 1, color: C.line }, fill: C.white, color: C.ink, fontFace: 'Aptos', fontSize: 16, align: 'center', valign: 'mid', margin: 0.06 });
+  card(slide, 9.35, 1.95, 3.05, 1.35, 'Best CNN Accuracy', 'FIR', C.teal, '0.864');
+  card(slide, 9.35, 3.55, 3.05, 1.35, 'Best Balanced acc.', 'FIR', C.orange, '0.777');
+  card(slide, 9.35, 5.15, 3.05, 1.15, 'Best Macro-F1', 'FIR · 0.784', C.purple);
+  addText(slide, 'CNN dùng log-STFT + mean patient aggregation; đây là secondary baseline, không thay thế câu hỏi DSP chính.', 0.75, 6.05, 8.45, 0.5, { fontSize: 16, color: C.teal, bold: true });
+  addFooter(slide, 13);
+}
+
+// 14. Robustness
+{
+  const slide = pptx.addSlide(); addTitle(slide, 'Pilot robustness: quantization và noise', '13 · Pilot robustness');
   addImage(slide, 'circor_100_robustness.png', 0.7, 1.45, 8.0, 4.25);
   card(slide, 9.05, 1.55, 3.15, 1.15, 'Sampling 1/2/4 kHz', 'Metric gần như không đổi', C.teal, '0.928');
   card(slide, 9.05, 2.95, 3.15, 1.15, 'Quantization 8-bit', 'Mất độ phân giải biên độ', C.orange, '0.732');
   card(slide, 9.05, 4.35, 3.15, 1.15, 'Pink / impulse noise', 'Suy giảm mạnh hơn white noise', C.purple, '0.796');
   addText(slide, 'Interpretation: giữ đúng dải tần là cần thiết, nhưng bit depth và loại nhiễu quyết định độ bền của feature.', 0.85, 6.1, 11.6, 0.45, { fontSize: 18, color: C.navy, bold: true, align: 'center' });
-  addFooter(slide, 13);
+  addFooter(slide, 14);
 }
 
-// 14. Signal-level
+// 15. Signal-level
 {
-  const slide = pptx.addSlide(); addTitle(slide, 'Signal-level analysis: từ waveform đến spectrogram', '11 · Signal + image');
+  const slide = pptx.addSlide(); addTitle(slide, 'Signal-level analysis: từ waveform đến spectrogram', '14 · Signal + image');
   addImage(slide, 'circor_100_signal_report/signal_report.png', 0.65, 1.45, 7.3, 4.55);
   slide.addShape(pptx.ShapeType.rect, { x: 8.35, y: 1.55, w: 4.0, h: 4.35, rectRadius: 0.08, fill: { color: C.white }, line: { color: C.line, width: 1 } });
   addText(slide, 'Cách đọc hình', 8.7, 1.9, 3.2, 0.35, { fontSize: 22, bold: true, color: C.navy });
   addBullets(slide, ['Waveform: transient và nhịp tim', 'FFT: thành phần tần số', 'PSD: năng lượng theo band', 'STFT: năng lượng thay đổi theo thời gian', 'Spectrogram là biểu diễn 2D cho phần Image Processing'], 8.7, 2.55, 3.1, 2.35, 15);
   addText(slide, 'Điểm nhấn: model không chỉ “nhìn” raw audio; nó sử dụng các đặc trưng được giải thích bằng DSP.', 8.7, 5.18, 3.1, 0.55, { fontSize: 15, color: C.teal, bold: true });
-  addFooter(slide, 14);
+  addFooter(slide, 15);
 }
 
-// 15. FE demo
+// 16. FE demo
 {
-  const slide = pptx.addSlide(); addTitle(slide, 'FE demo và kịch bản trình diễn', '12 · Demo');
+  const slide = pptx.addSlide(); addTitle(slide, 'FE demo và kịch bản trình diễn', '15 · Demo');
   const steps = [['1', 'Upload WAV', 'Chọn một recording PCG', C.teal], ['2', 'Analyze', 'Chạy đúng DSP pipeline', C.orange], ['3', 'Inspect', 'Waveform · FFT · PSD · STFT', C.purple], ['4', 'Decide', 'Label + probabilities', C.mint]];
   steps.forEach((s, i) => {
     const x = 0.75 + i * 3.02;
@@ -361,21 +379,21 @@ function addMetric(slide, x, y, value, label, color = C.teal) {
   slide.addShape(pptx.ShapeType.rect, { x: 7.05, y: 3.75, w: 5.15, h: 2.55, rectRadius: 0.08, fill: { color: C.navy2 }, line: { color: C.navy2 } });
   addText(slide, 'Kịch bản nói', 7.4, 4.05, 4.3, 0.3, { fontSize: 21, bold: true, color: C.white });
   addBullets(slide, ['“Đây là raw PCG và các biểu diễn sau DSP.”', '“Tôi đổi 16-bit sang 8-bit để kiểm tra robustness.”', '“Model đã train trước; FE chỉ inference, không train lại.”', '“Đây là research prototype, không phải diagnosis.”'], 7.4, 4.62, 4.3, 1.25, 15, 'E6FFFB');
-  addFooter(slide, 15);
+  addFooter(slide, 16);
 }
 
-// 14. Limitations/conclusion
+// 17. Limitations/conclusion
 {
   const slide = pptx.addSlide();
   slide.background = { color: C.navy };
   addText(slide, 'KẾT LUẬN', 0.75, 0.65, 4.5, 0.3, { fontSize: 13, bold: true, color: '8FE3D8', charSpacing: 1.5 });
   addText(slide, 'DSP front-end quyết định\nđộ bền của hệ thống.', 0.75, 1.25, 6.0, 1.3, { fontSize: 36, bold: true, color: C.white, breakLine: true });
-  addBullets(slide, ['Full benchmark: 1 kHz nhanh nhất; 4 kHz + none đạt Macro-F1 0.637 trong split hiện tại.', '4 kHz tốn thêm khoảng 43–48% thời gian; chênh lệch điểm cần kiểm chứng nhiều seed.', 'Pipeline, model bundle và Streamlit FE đã chạy end-to-end.', 'Bước tiếp theo: nhiều seed, segmentation-aware features, calibration.'], 0.82, 3.15, 6.2, 2.25, 18, 'D7E5EE');
+  addBullets(slide, ['Full benchmark: 1 kHz nhanh nhất; 4 kHz + none đạt Macro-F1 0.637 trong split hiện tại.', 'MobileNet frozen + FIR đạt binary Macro-F1 0.784; giữ như baseline phụ.', 'Pipeline, model bundle và Streamlit FE đã chạy end-to-end.', 'Bước tiếp theo: nhiều seed, segmentation-aware features, calibration.'], 0.82, 3.15, 6.2, 2.25, 18, 'D7E5EE');
   slide.addShape(pptx.ShapeType.rect, { x: 7.65, y: 1.25, w: 4.6, h: 3.95, rectRadius: 0.08, fill: { color: '17324D' }, line: { color: '2C526F', width: 1 } });
   addText(slide, 'Hạn chế cần nói rõ', 8.05, 1.65, 3.8, 0.3, { fontSize: 21, bold: true, color: 'FDBA74' });
   addBullets(slide, ['Public training release 942 bệnh nhân', 'Test set 132 bệnh nhân · seed 42', 'Chưa clinical validation', 'Chưa cycle-level segmentation'], 8.05, 2.25, 3.5, 1.75, 16, 'D7E5EE');
   addText(slide, 'Cảm ơn · Q&A', 7.65, 5.85, 4.6, 0.55, { fontSize: 27, bold: true, color: '8FE3D8', align: 'center' });
-  addFooter(slide, 16);
+  addFooter(slide, 17);
 }
 
 pptx.writeFile({ fileName: output });

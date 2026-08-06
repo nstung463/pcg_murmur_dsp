@@ -1,115 +1,372 @@
-?? �N CU?I K?
+                                                                                            DSP501 · Digital Signal and Image Processing
+ĐỒ ÁN CUỐI KỲ
 DIGITAL SIGNAL AND IMAGE PROCESSING (DSP501)
 Robust Phonocardiogram Murmur Detection
 with Digital Signal Processing
-B�o c�o nghi�n c?u v� tri?n khai h? th?ng DSP/ML tr�n t�n hi?u tim PCG
-Th�ng tin	N?i dung
-M�n h?c	Digital Signal and Image Processing (DSP501)
-D? li?u	CirCor DigiScope / PhysioNet Challenge 2022
-Ph?m vi	Audit d? li?u, DSP ablation, robustness v� FE demo
-Sinh vi�n	____________________________
-Ng�y	05/08/2026
 
-L?u �: h? th?ng l� research prototype ph?c v? m?c ti�u h?c t?p v� ph�n t�ch DSP; kh�ng ph?i thi?t b? ch?n ?o�n l�m s�ng.
-
-T�m t?t
-B�o c�o tr�nh b�y m?t pipeline x? l� v� ph�n lo?i t�n hi?u phonocardiogram (PCG) nh?m nghi�n c?u ?nh h??ng c?a c�c kh?i DSP ??n b�i to�n ph�t hi?n heart murmur. H? th?ng th?c hi?n ??c WAV, chuy?n mono, chu?n h�a, resampling, quantization, l?c d?i th�ng, chia ?o?n v� tr�ch xu?t c�c bi?u di?n th?i gian�t?n s? g?m th?ng k� th?i gian, Welch PSD, FFT, STFT v� MFCC. C�c vector ??c tr?ng ???c g?p theo b?nh nh�n ?? tr�nh r� r? d? li?u gi?a c�c t?p train/test.
-Tr�n subset t?i tr?c ti?p g?m 100 b?nh nh�n v� 325 b?n ghi h?p l?, nghi�n c?u ch?y matrix 24 c?u h�nh (3 lo?i filter � 4 nh�m feature � SVM/MLP) v� 10 th� nghi?m robustness cho sampling rate, quantization v� noise. C?u h�nh t?t nh?t l� SVM v?i Butterworth ho?c FIR v� hybrid features, ??t accuracy 0.933, balanced accuracy 0.950 v� macro-F1 0.928 tr�n t?p test 15 b?nh nh�n. K?t qu? cho th?y quantization 8-bit v� pink/impulse noise l�m suy gi?m hi?u n?ng r� h?n thay ??i sampling rate trong ph?m vi 1�4 kHz.
-T? kh�a: phonocardiogram, PCG, heart murmur, sampling, quantization, band-pass filter, FFT, PSD, STFT, SVM.
-M?c l?c
+                      Báo cáo nghiên cứu và triển khai hệ thống DSP/ML trên tín hiệu tim PCG
 
 
 
-1. Gi?i thi?u
-1.1. B?i c?nh b�i to�n
-Phonocardiogram l� t�n hi?u �m thanh thu ???c khi nghe tim b?ng c?m bi?n ho?c ?ng nghe ?i?n t?. Murmur c� th? bi?u hi?n d??i d?ng n?ng l??ng b?t th??ng ho?c thay ??i c?u tr�c ph? trong chu k? tim. Do ?�, PCG l� m?t b�i to�n ph� h?p ?? minh h?a c�c kh�i ni?m DSP: l?y m?u, l??ng t? h�a, l?c, ph�n t�ch ph?, bi?u di?n th?i gian�t?n s? v� ?�nh gi� ?? b?n v?i nhi?u.
-1.2. C�u h?i nghi�n c?u
-    � Front-end DSP n�o ??t c�n b?ng t?t gi?a hi?u n?ng v� ?? ph?c t?p cho ph�n lo?i Absent/Present?
-    � Sampling rate v� quantization ?nh h??ng nh? th? n�o ??n ??c tr?ng PCG?
-    � C�c d?ng nhi?u white, pink v� impulse l�m thay ??i macro-F1 ra sao?
-    � Patient-wise split c� th? gi? nguy�n t�nh t�i l?p v� tr�nh leakage nh? th? n�o?
-1.3. ?�ng g�p c?a ?? �n
-    � X�y d?ng pipeline DSP c� c?u h�nh h�a, t�i l?p v� d�ng chung cho training, CLI inference v� Streamlit FE.
-    � So s�nh ??nh l??ng filter, feature representation v� classifier b?ng macro-F1, balanced accuracy v� confusion matrix.
-    � B? sung robustness matrix cho sampling, bit depth v� noise.
-    � T?o demo tr?c quan cho waveform, FFT, PSD, STFT v� x�c su?t ph�n lo?i.
-2. D? li?u v� thi?t k? th� nghi?m
+         Thông tin                                                        Nội dung
+ Môn học                                              Digital Signal and Image Processing (DSP501)
+
+ Dữ liệu                                              CirCor DigiScope / PhysioNet Challenge 2022
+
+ Phạm vi                                           Audit dữ liệu, DSP ablation, robustness và FE demo
+
+ Sinh viên                                                  ____________________________
+
+ Ngày                                                                     05/08/2026
+
+
+
+
+        Lưu ý: hệ thống là research prototype phục vụ mục tiêu học tập và phân tích DSP; không phải thiết bị chẩn đoán lâm sàng.
+
+
+
+
+                                                                Trang 1
+                                                                             DSP501 · Digital Signal and Image Processing
+
+Tóm tắt
+Báo cáo trình bày một pipeline xử lý và phân loại tín hiệu phonocardiogram (PCG) nhằm nghiên cứu ảnh hưởng
+của các khối DSP đến bài toán phát hiện heart murmur. Hệ thống thực hiện đọc WAV, chuyển mono, chuẩn hóa,
+resampling, quantization, lọc dải thông, chia đoạn và trích xuất các biểu diễn thời gian–tần số gồm thống kê thời
+gian, Welch PSD, FFT, STFT và MFCC. Các vector đặc trưng được gộp theo bệnh nhân để tránh rò rỉ dữ liệu
+giữa các tập train/test.
+Bản chính sử dụng toàn bộ public training release: 942 bệnh nhân và 3.163 WAV, trong đó 874 bệnh nhân có
+nhãn Absent/Present được dùng cho supervised learning. Patient-wise split gồm 611 train, 131 validation và 132
+test. Full matrix 24 cấu hình cho thấy MLP + không filter + MFCC đạt macro-F1 cao nhất 0,693, còn SVM +
+không filter + hybrid có balanced accuracy cao nhất 0,664 trong cùng split. Một MobileNetV3-Small pretrained
+frozen được thêm như baseline phụ trên cùng split; FIR đạt accuracy 0,864, balanced accuracy 0,777 và macro-
+F1 0,784. Benchmark preprocess cố định SVM + Butterworth + hybrid cho thấy 1 kHz + 16-bit là baseline nhanh
+nhất (85,8 s; macro-F1 0,615), còn 4 kHz + không quantization thêm đạt macro-F1 0,637 nhưng tốn 126,9 s.
+Matrix và robustness trên subset 100 patient được giữ như pilot để minh họa xu hướng khác biệt với kết quả full
+cohort.
+Từ khóa: phonocardiogram, PCG, heart murmur, sampling, quantization, band-pass filter, FFT, PSD, STFT,
+SVM.
+
+Mục lục
+1. Giới thiệu — 3
+2. Dữ liệu và thiết kế thí nghiệm — 3
+3. Cơ sở DSP và pipeline — 4
+4. Matrix thực nghiệm — 4
+4.1. Full-cohort benchmark sampling/quantization — 5
+4.2. Full-data matrix model/filter/feature — 6
+4.3. Pretrained MobileNet baseline — 7
+5. Robustness theo sampling, quantization và noise — 5
+6. Signal-level analysis và FE demo — 6
+7. Đánh giá và hạn chế — 7
+8. Kết luận và hướng phát triển — 7
+Tài liệu tham khảo — 8
+
+
+
+
+                                                     Trang 2
+                                                                                       DSP501 · Digital Signal and Image Processing
+
+1. Giới thiệu
+1.1. Bối cảnh bài toán
+Phonocardiogram là tín hiệu âm thanh thu được khi nghe tim bằng cảm biến hoặc ống nghe điện tử. Murmur có
+thể biểu hiện dưới dạng năng lượng bất thường hoặc thay đổi cấu trúc phổ trong chu kỳ tim. Do đó, PCG là một
+bài toán phù hợp để minh họa các khái niệm DSP: lấy mẫu, lượng tử hóa, lọc, phân tích phổ, biểu diễn thời gian–
+tần số và đánh giá độ bền với nhiễu.
+
+1.2. Câu hỏi nghiên cứu
+    ●    Front-end DSP nào đạt cân bằng tốt giữa hiệu năng và độ phức tạp cho phân loại Absent/Present?
+    ●    Sampling rate và quantization ảnh hưởng như thế nào đến đặc trưng PCG?
+    ●    Các dạng nhiễu white, pink và impulse làm thay đổi macro-F1 ra sao?
+    ●    Patient-wise split có thể giữ nguyên tính tái lập và tránh leakage như thế nào?
+
+1.3. Đóng góp của đồ án
+    ●    Xây dựng pipeline DSP có cấu hình hóa, tái lập và dùng chung cho training, CLI inference và Streamlit
+         FE.
+    ●    So sánh định lượng filter, feature representation và classifier bằng macro-F1, balanced accuracy và
+         confusion matrix.
+    ●    Bổ sung robustness matrix cho sampling, bit depth và noise.
+    ●    Tạo demo trực quan cho waveform, FFT, PSD, STFT và xác suất phân loại.
+
+2. Dữ liệu và thiết kế thí nghiệm
 2.1. Dataset
-Ngu?n d? li?u l� CirCor DigiScope ???c c�ng b? tr�n PhysioNet. M?i b?nh nh�n c� file metadata .txt, m?t ho?c nhi?u recording WAV t?i c�c v? tr� nghe tim, nh�n murmur v� t�y ch?n file segmentation. Trong tri?n khai n�y, metadata ???c parse theo patient_id; c�c recording c�ng b?nh nh�n lu�n ???c gi? chung m?t partition.
+Nguồn dữ liệu là CirCor DigiScope được công bố trên PhysioNet. Mỗi bệnh nhân có file metadata .txt, một hoặc
+nhiều recording WAV tại các vị trí nghe tim, nhãn murmur và tùy chọn file segmentation. Trong triển khai này,
+metadata được parse theo patient_id; các recording cùng bệnh nhân luôn được giữ chung một partition.
 PhysioNet CirCor Heart Sound Dataset
-??c t�nh	Gi� tr?
-B?nh nh�n t?i ???c	100
-Recording WAV h?p l?	325
-Absent / Present / Unknown recordings	199 / 109 / 17
-B?nh nh�n Absent / Present / Unknown	60 / 32 / 8
-Sample rate ngu?n	4 kHz (325/325)
-Th?i l??ng	6.592�46.496 s
-Invalid/missing	0
-B?ng 1. Th?ng k� audit subset 100 b?nh nh�n.
-Archive ZIP to�n b? b? throttled trong m�i tr??ng th?c thi, n�n nghi�n c?u s? d?ng patient-wise direct-download subset. ?�y l� gi?i h?n v? ph?m vi d? li?u v� ???c gi? r� trong ph?n k?t lu?n; c�c metric kh�ng ???c tr�nh b�y nh? k?t qu? tr�n to�n b? cohort.
-2.2. Chia d? li?u
-Sau khi lo?i Unknown kh?i supervised learning, 92 b?nh nh�n c� nh�n ???c chia stratified theo patient_id v?i seed 42: 64 train, 13 validation v� 15 test. C�c location AV/MV/PV/TV c?a c�ng b?nh nh�n kh�ng bao gi? b? t�ch sang partition kh�c.
-3. C? s? DSP v� pipeline
-3.1. Chu?i x? l�
-V?i m?i WAV, h? th?ng th?c hi?n: (1) ??c PCM v� chuy?n mono; (2) resample v? target_fs; (3) l??ng t? h�a v? bit depth ???c ch?n; (4) th�m noise c� ki?m so�t n?u b?t robustness test; (5) wavelet denoise t�y ch?n; (6) band-pass filter 25�400 Hz; (7) chia c?a s? 3 gi�y, hop 1.5 gi�y; (8) tr�ch xu?t feature; (9) trung b�nh theo window v� recording ?? t?o m?t vector patient-level.
+
+                      Đặc tính                                                     Giá trị
+ Bệnh nhân trong metadata                                                            942
+
+ Recording WAV hợp lệ                                                               3.163
+
+ Absent / Present / Unknown patients                                            695 / 179 / 68
+
+ Bệnh nhân dùng supervised                                                 874 (loại 68 Unknown)
+
+ Sample rate nguồn                                                           4 kHz (3.163/3.163)
+
+ Split patient-wise                                                            611 / 131 / 132
+
+ Invalid/missing                                                                      0
+                                  Bảng 1. Audit toàn bộ public training release CirCor 1.0.3.
+
+Đây là toàn bộ public training release tải được, không phải toàn bộ 1.568 subjects của mô tả dataset ban đầu.
+Nhãn Unknown được giữ trong audit nhưng loại khỏi supervised learning; các đường ghi âm còn lại đều có
+sample rate 4 kHz và đọc được thành công.
+
+                                                           Trang 3
+                                                                                    DSP501 · Digital Signal and Image Processing
+2.2. Chia dữ liệu
+Sau khi loại Unknown khỏi supervised learning, 874 bệnh nhân có nhãn được chia stratified theo patient_id với
+seed 42: 611 train, 131 validation và 132 test. Các location AV/MV/PV/TV của cùng bệnh nhân không bao giờ
+bị tách sang partition khác.
+
+3. Cơ sở DSP và pipeline
+3.1. Chuỗi xử lý
+Với mỗi WAV, hệ thống thực hiện: (1) đọc PCM và chuyển mono; (2) resample về target_fs; (3) lượng tử hóa về
+bit depth được chọn; (4) thêm noise có kiểm soát nếu bật robustness test; (5) wavelet denoise tùy chọn; (6) band-
+pass filter 25–400 Hz; (7) chia cửa sổ 3 giây, hop 1.5 giây; (8) trích xuất feature; (9) trung bình theo window và
+recording để tạo một vector patient-level.
+
 3.2. Feature representation
-Nh�m	Th�nh ph?n
-Stats	Mean, standard deviation, RMS, skewness, kurtosis
-PSD	Welch band-power ratios v� spectral entropy
-FFT	Ba peak frequency v� magnitude chu?n h�a
-STFT	Mean, std v� quantiles c?a log magnitude spectrogram
-MFCC	Mean/std c?a 13 MFCC
-Hybrid	K?t h?p to�n b? nh�m tr�n
-B?ng 2. C�c bi?u di?n ???c d�ng trong matrix.
+
+          Nhóm                                             Thành phần
+ Stats                                    Mean, standard deviation, RMS, skewness, kurtosis
+
+ PSD                                          Welch band-power ratios và spectral entropy
+
+ FFT                                          Ba peak frequency và magnitude chuẩn hóa
+
+ STFT                                    Mean, std và quantiles của log magnitude spectrogram
+
+ MFCC                                                  Mean/std của 13 MFCC
+
+ Hybrid                                               Kết hợp toàn bộ nhóm trên
+                                    Bảng 2. Các biểu diễn được dùng trong matrix.
+
+
 3.3. Classifier
-Hai baseline ???c so s�nh: SVM RBF v?i StandardScaler, probability=True v� class_weight=balanced; MLPClassifier v?i hai hidden layers (128, 64), early stopping v� seed c? ??nh. SVM ???c ch?n l�m model demo v� ?n ??nh h?n MLP tr�n subset nh? v� c� x�c su?t l?p ?? hi?n th? trong FE.
-4. Matrix th?c nghi?m
-Matrix ch�nh g?m 24 c?u h�nh: filter ? {none, Butterworth, FIR}, feature ? {PSD, MFCC, STFT, hybrid}, model ? {SVM, MLP}. Metric ch�nh l� macro-F1 v� hai l?p kh�ng c�n b?ng ho�n to�n; balanced accuracy, precision, recall v� confusion matrix ???c l?u k�m.
+Hai baseline cổ điển được so sánh: SVM RBF với StandardScaler, probability=True và class_weight=balanced;
+MLPClassifier với hai hidden layers (128, 64), early stopping và seed cố định. Ngoài ra, MobileNetV3-Small
+pretrained với backbone frozen được chạy như baseline spectrogram nhẹ; SVM vẫn được chọn làm model demo
+vì ổn định hơn MLP và CNN trên CPU, đồng thời có xác suất lớp để hiển thị trong FE.
 
-H�nh 1. So s�nh macro-F1 gi?a c�c front-end DSP v� classifier.
-C?u h�nh	Accuracy	Balanced acc.	Macro-F1
-SVM + Butterworth + hybrid	0.933	0.950	0.928
-SVM + FIR + hybrid	0.933	0.950	0.928
-SVM + FIR + PSD	0.933	0.900	0.921
-SVM + no filter + PSD	0.933	0.900	0.921
-MLP + no filter + hybrid	0.867	0.800	0.830
-B?ng 3. C�c c?u h�nh c� macro-F1 cao nh?t trong 24-run matrix.
-Hybrid kh�ng lu�n v??t PSD ? m?i classifier, nh?ng SVM hybrid sau Butterworth/FIR ??t balanced accuracy v� macro-F1 cao nh?t. MLP c� th? ??t k?t qu? kh� v?i hybrid kh�ng l?c nh?ng dao ??ng l?n h?n gi?a c�c front-end, ph� h?p v?i nh?n ??nh r?ng subset patient-level c�n nh?.
-5. Robustness theo sampling, quantization v� noise
-?? t�ch ?nh h??ng c?a t?ng y?u t? DSP, h? th?ng c? ??nh SVM + Butterworth + hybrid v� ch?y th�m 10 ?i?u ki?n. M?i ?i?u ki?n d�ng c�ng patient split, seed v� metric v?i matrix ch�nh.
+4. Matrix thực nghiệm
+Matrix chính gồm 24 cấu hình: filter ∈ {none, Butterworth, FIR}, feature ∈ {PSD, MFCC, STFT, hybrid},
+model ∈ {SVM, MLP}. Metric chính là macro-F1 vì hai lớp không cân bằng hoàn toàn; balanced accuracy,
+precision, recall và confusion matrix được lưu kèm.
 
-H�nh 2. Macro-F1 theo sampling rate, quantization v� noise.
-?i?u ki?n	Macro-F1
-Sampling 1 / 2 / 4 kHz	0.928 / 0.928 / 0.928
-Quantization 8 / 12 / 16 bit	0.732 / 0.928 / 0.928
-White noise, 20 dB	0.850
-White noise, 10 dB	0.921
-Pink noise, 10 dB	0.796
-Impulse noise, 10 dB	0.796
-B?ng 4. Robustness matrix.
-Trong subset n�y, gi?m sampling t? 4 kHz xu?ng 1 kHz kh�ng l�m thay ??i metric c?a c?u h�nh ?� ch?n, cho th?y d?i 25�400 Hz v?n ???c b?o to�n. Ng??c l?i, 8-bit quantization l�m gi?m macro-F1 r� r?t. Pink v� impulse noise g�y suy gi?m nhi?u h?n white noise ? c�ng m?c SNR, g?i � r?ng nhi?u c� c?u tr�c ho?c nhi?u xung ?nh h??ng m?nh ??n ph? v� transient c?a PCG.
-6. Signal-level analysis v� FE demo
+
+
+
+                                                       Trang 4
+                                                                                    DSP501 · Digital Signal and Image Processing
+
+
+
+
+                              Hình 1. So sánh macro-F1 giữa các front-end DSP và classifier.
+
+
+                       Cấu hình                            Accuracy         Balanced acc.           Macro-F1
+ SVM + Butterworth + hybrid                                   0.933               0.950                 0.928
+
+ SVM + FIR + hybrid                                           0.933               0.950                 0.928
+
+ SVM + FIR + PSD                                              0.933               0.900                 0.921
+
+ SVM + no filter + PSD                                        0.933               0.900                 0.921
+
+ MLP + no filter + hybrid                                     0.867               0.800                 0.830
+                              Bảng 3. Các cấu hình có macro-F1 cao nhất trong 24-run matrix.
+
+Hybrid không luôn vượt PSD ở mọi classifier, nhưng SVM hybrid sau Butterworth/FIR đạt balanced accuracy và
+macro-F1 cao nhất. MLP có thể đạt kết quả khá với hybrid không lọc nhưng dao động lớn hơn giữa các front-
+end, phù hợp với nhận định rằng subset patient-level còn nhỏ.
+
+
+
+
+                                                         Trang 5
+                                                                                 DSP501 · Digital Signal and Image Processing
+4.1. Full-cohort benchmark: sampling và quantization
+Để trả lời trực tiếp câu hỏi có cần hạ sample rate hoặc quantize lại hay không, benchmark đầy đủ giữ nguyên
+SVM + Butterworth + hybrid, cùng seed 42 và cùng patient-wise split, chỉ thay target sampling rate và bit depth.
+Mỗi thời gian dưới đây là thời gian feature extraction + train trên CPU với 4 workers.
+
+             Cấu hình                Thời gian       So với 1 kHz        Accuracy         Macro-F1
+ 1 kHz + 16-bit                         85,8 s            1,00×             0,742             0,615
+
+ 2 kHz + 16-bit                         98,4 s            1,15×             0,758             0,628
+
+ 4 kHz + 16-bit                        122,8 s            1,43×             0,773             0,630
+
+ 4 kHz + none                          126,9 s            1,48×             0,780             0,637
+
+ 4 kHz + 8-bit                         128,7 s            1,50×             0,765             0,634
+
+ 4 kHz + 12-bit                        126,3 s            1,47×             0,773             0,630
+                        Bảng 4. Benchmark toàn bộ 874 bệnh nhân có nhãn; test = 132 bệnh nhân.
+
+Kết luận thực nghiệm: 4 kHz giữ thêm thông tin nhưng tăng thời gian khoảng 43–48% so với 1 kHz; lợi ích
+Macro-F1 chỉ tăng nhẹ (0,615 → 0,630–0,637) trên một split. Bỏ quantization thêm đạt điểm cao nhất trong
+benchmark này, nhưng chênh lệch nhỏ và chưa đủ để khẳng định ưu thế thống kê. Vì vậy FE cho phép chọn 1
+kHz + 16-bit để demo nhanh hoặc 4 kHz + none để tái hiện tín hiệu gốc.
+
+
+
+
+                                                       Trang 6
+                                                                                      DSP501 · Digital Signal and Image Processing
+4.2. Full-data matrix: model, filter và feature
+Matrix đầy đủ giữ target fs = 1 kHz, quantization = 16-bit, seed 42 và patient-wise split; chỉ thay 3 loại filter × 4
+nhóm feature × 2 classifier. Kết quả dưới đây là các cấu hình đứng đầu theo Macro-F1; toàn bộ 24 dòng được lưu
+trong artifacts/full_matrix_24/full_matrix.csv.
+
+       Model              Filter               Feature               Accuracy      Balanced acc.          Macro-F1
+ MLP                       None                 MFCC                   0,848             0,657                0,693
+
+ MLP                       None                 Hybrid                 0,841             0,625                0,654
+
+ SVM                       None                 Hybrid                 0,750             0,664                0,648
+
+ SVM                       FIR                  Hybrid                 0,765             0,646                0,644
+
+ SVM                       None                 MFCC                   0,742             0,659                0,642
+
+ SVM                       FIR                  MFCC                   0,758             0,628                0,628
+
+ SVM                    Butterworth             Hybrid                 0,742             0,618                0,615
+                          Bảng 5. Top full-data configurations theo Macro-F1; test = 132 bệnh nhân.
+
+Không filter cho kết quả tốt hơn trong split này; MFCC giúp MLP đạt Macro-F1 cao nhất, trong khi SVM + none
++ hybrid có balanced accuracy cao nhất. Tuy nhiên confusion matrix của MLP + none + MFCC vẫn cho thấy lớp
+Present khó nhận diện (9/27 đúng), vì vậy không nên chọn model chỉ theo Accuracy. Đây là kết luận trên một
+seed, cần lặp nhiều seed trước khi khẳng định ưu thế.
+
+4.3. Pretrained MobileNet baseline
+MobileNetV3-Small dùng ImageNet pretrained weights, backbone frozen, input là log-STFT 128×128 từ tối đa
+hai cửa sổ 3 giây mỗi recording và mean aggregation về patient-level. Thí nghiệm vẫn là bài toán binary
+Absent/Present, giữ target fs = 1 kHz, quantization = 16-bit, seed 42 và split 611/131/132; chỉ thay filter để so
+sánh công bằng với DSP matrix.
+
+               Filter                       Accuracy                  Balanced acc.              Macro-F1
+ None                                          0,841                       0,749                      0,752
+
+ Butterworth                                   0,826                       0,698                      0,712
+
+ FIR                                           0,864                       0,777                      0,784
+                          Bảng 6. MobileNetV3-Small pretrained frozen, binary test = 132 bệnh nhân.
+
+FIR là cấu hình MobileNet tốt nhất trong binary benchmark theo cả Accuracy, Balanced Accuracy và Macro-F1.
+Đây là kết quả bổ sung để đối chiếu representation spectrogram với feature DSP thủ công; không dùng CNN thay
+thế cho câu hỏi chính về filter/feature của DSP.
+
+5. Robustness theo sampling, quantization và noise
+Để tách ảnh hưởng của từng yếu tố DSP, hệ thống cố định SVM + Butterworth + hybrid và chạy thêm 10 điều
+kiện trên pilot subset 100 bệnh nhân. Mỗi điều kiện dùng cùng patient split, seed và metric với matrix chính; các
+số liệu ở mục này chỉ dùng để minh họa xu hướng robustness, còn benchmark toàn cohort nằm ở mục 4.1.
+
+
+
+
+                                                           Trang 7
+                                                                                    DSP501 · Digital Signal and Image Processing
+
+
+
+
+                                Hình 2. Macro-F1 theo sampling rate, quantization và noise.
+
+
+                                 Điều kiện                                                    Macro-F1
+ Sampling 1 / 2 / 4 kHz                                                                 0.928 / 0.928 / 0.928
+
+ Quantization 8 / 12 / 16 bit                                                           0.732 / 0.928 / 0.928
+
+ White noise, 20 dB                                                                             0.850
+
+ White noise, 10 dB                                                                             0.921
+
+ Pink noise, 10 dB                                                                              0.796
+
+ Impulse noise, 10 dB                                                                           0.796
+                                                Bảng 4. Robustness matrix.
+
+Trong subset này, giảm sampling từ 4 kHz xuống 1 kHz không làm thay đổi metric của cấu hình đã chọn, cho
+thấy dải 25–400 Hz vẫn được bảo toàn. Ngược lại, 8-bit quantization làm giảm macro-F1 rõ rệt. Pink và impulse
+noise gây suy giảm nhiều hơn white noise ở cùng mức SNR, gợi ý rằng nhiễu có cấu trúc hoặc nhiễu xung ảnh
+hưởng mạnh đến phổ và transient của PCG.
+
+6. Signal-level analysis và FE demo
 6.1. Signal report
-Signal report minh h?a m?t recording qua raw waveform, processed waveform, FFT, Welch PSD v� log-STFT. C�c bi?u ?? gi�p ng??i xem li�n h? tr?c ti?p gi?a thao t�c DSP v� output model thay v� ch? xem m?t con s? accuracy.
+Signal report minh họa một recording qua raw waveform, processed waveform, FFT, Welch PSD và log-STFT.
+Các biểu đồ giúp người xem liên hệ trực tiếp giữa thao tác DSP và output model thay vì chỉ xem một con số
+accuracy.
 
-H�nh 3. V� d? signal-level report tr�n m?t WAV CirCor th?t.
+
+
+
+                                                          Trang 8
+                                                                                     DSP501 · Digital Signal and Image Processing
+
+
+
+
+                                 Hình 3. Ví dụ signal-level report trên một WAV CirCor thật.
+
+
 6.2. Streamlit demo
-FE n?m trong app.py v� g?i c�ng service inference v?i CLI. Ng??i d�ng upload WAV, ch?n sampling rate, quantization, filter v� noise preview; sau ?� xem audio player, waveform, FFT, PSD, STFT, class probabilities v� c?u h�nh DSP ???c d�ng. Model m?c ??nh l� svm_butterworth_hybrid/model.joblib.
-L?nh ch?y demo:
+FE nằm trong app.py và gọi cùng service inference với CLI. Người dùng upload WAV, chọn sampling rate,
+quantization, filter và noise preview; sau đó xem audio player, waveform, FFT, PSD, STFT, class probabilities
+và cấu hình DSP được dùng. Model mặc định là svm_butterworth_hybrid/model.joblib.
+Lệnh chạy demo:
 .\.venv\Scripts\python.exe -m streamlit run app.py
-Khi tr�nh b�y, demo n�n ?i theo flow: upload m?t WAV ? gi?i th�ch raw/filtered waveform ? ch? ra n?ng l??ng tr�n FFT/PSD ? xem STFT ? ??i 16-bit sang 8-bit ho?c b?t pink noise ? ph�n t�ch thay ??i probability. ?�y l� minh h?a robustness, kh�ng ph?i ph�p ch?n ?o�n.
-7. ?�nh gi� v� h?n ch?
-    � Test set ch? c� 15 b?nh nh�n; kho?ng tin c?y v� ?? ?n ??nh theo seed ch?a th? ??i di?n cho to�n cohort.
-    � Subset 100 b?nh nh�n kh�ng ph?i to�n b? CirCor archive; c?n t?i ?? dataset v� rerun to�n b? matrix n?u y�u c?u k?t qu? ch�nh th?c.
-    � Segmentation annotations ???c parse v� l?u trong manifest nh?ng pipeline hi?n t?i ch?a d�ng ?? c?t ri�ng S1, systole, S2 v� diastole.
-    � K?t qu? l� proof-of-concept cho m�n DSP, kh�ng ???c di?n gi?i th�nh hi?u n?ng ch?n ?o�n y khoa.
-    � MLP v� SVM l� baseline CPU; nghi�n c?u ch?a ?�nh gi� CNN ho?c calibration tr�n cohort l?n.
-8. K?t lu?n v� h??ng ph�t tri?n
-?? �n ?� x�y d?ng v� ki?m ch?ng m?t pipeline PCG end-to-end c� th? t�i l?p t? d? li?u WAV t?i prediction v� FE visualization. Matrix 24-run cho th?y SVM k?t h?p hybrid features sau Butterworth ho?c FIR l� l?a ch?n t?t nh?t trong subset hi?n t?i, v?i macro-F1 0.928. Robustness matrix cho th?y h? th?ng �t nh?y v?i sampling 1�4 kHz nh?ng nh?y h?n v?i quantization 8-bit v� noise c� c?u tr�c/xung.
-C�c b??c ph�t tri?n ti?p theo g?m: t?i to�n b? CirCor archive, l?p l?i ?�nh gi� v?i nhi?u patient-wise seeds, s? d?ng segmentation ?? t?o cycle-level feature, b? sung confidence interval/calibration, v� ch? khi c?n m?i so s�nh v?i spectrogram CNN.
-T�i li?u tham kh?o
-[1] PhysioNet, �CirCor DigiScope Dataset,� version 1.0.3. 
+
+Khi trình bày, demo nên đi theo flow: upload một WAV → nghe/xem Raw → chọn target fs và xem waveform
+After resample → bật quantization và xem After quantization → bật band-pass và xem After filter → chỉ ra năng
+lượng trên FFT/PSD → xem STFT → đổi 16-bit sang 8-bit hoặc bật pink noise → phân tích thay đổi probability.
+Đây là minh họa robustness, không phải phép chẩn đoán.
+
+7. Đánh giá và hạn chế
+    ●   Benchmark full-cohort có test set 132 bệnh nhân nhưng mới dùng một patient-wise split seed 42; khoảng
+        tin cậy và độ ổn định theo nhiều seed chưa được tính.
+    ●   Public training release có 942 bệnh nhân; đây chưa phải toàn bộ 1.568 subjects của dataset ban đầu.
+    ●   Segmentation annotations được parse và lưu trong manifest nhưng pipeline hiện tại chưa dùng để cắt
+        riêng S1, systole, S2 và diastole.
+    ●   Kết quả là proof-of-concept cho môn DSP, không được diễn giải thành hiệu năng chẩn đoán y khoa.
+    ●   MobileNet là baseline transfer-learning frozen; chưa fine-tune toàn backbone, calibration xác suất hoặc
+        đánh giá nhiều seed trên CNN.
+
+
+
+
+                                                           Trang 9
+                                                                             DSP501 · Digital Signal and Image Processing
+
+8. Kết luận và hướng phát triển
+Đồ án đã xây dựng và kiểm chứng một pipeline PCG end-to-end có thể tái lập từ dữ liệu WAV tới prediction và
+FE visualization. Trên full public training release, full matrix cho thấy MLP + không filter + MFCC đạt Macro-
+F1 0,693, còn SVM + không filter + hybrid đạt balanced accuracy 0,664 trong split hiện tại. MobileNetV3-Small
+pretrained frozen đạt Macro-F1 0,784 với FIR trên cùng binary split, nhưng được giữ như baseline phụ.
+Preprocess benchmark cho thấy 1 kHz + 16-bit là lựa chọn nhanh nhất; 4 kHz + không quantization thêm đạt
+Macro-F1 0,637 với chi phí thời gian khoảng 1,48×. Các kết quả cần được kiểm chứng thêm bằng nhiều seed vì
+lớp Present vẫn khó nhận diện.
+Các bước phát triển tiếp theo gồm: lặp lại đánh giá với nhiều patient-wise seeds, sử dụng segmentation để tạo
+cycle-level feature, bổ sung confidence interval/calibration, và nếu cần thì fine-tune hoặc mở rộng MobileNet
+trên GPU và các subjects ngoài public training release.
+
+Tài liệu tham khảo
+[1] PhysioNet, “CirCor DigiScope Dataset,” version 1.0.3.
 https://physionet.org/content/circor-heart-sound/1.0.3/
 [2] SciPy Signal Processing documentation: resampling, filtering, Welch PSD and STFT.
 [3] Scikit-learn documentation: SVC, MLPClassifier, patient-wise evaluation utilities.
 [4] PyWavelets documentation: discrete wavelet transform and soft-threshold denoising.
+
+
+
+
+                                                     Trang 10
+

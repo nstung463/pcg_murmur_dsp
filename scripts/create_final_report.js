@@ -109,7 +109,7 @@ const doc = new Document({
 
       heading('Tóm tắt', HeadingLevel.HEADING_1),
       para('Báo cáo trình bày một pipeline xử lý và phân loại tín hiệu phonocardiogram (PCG) nhằm nghiên cứu ảnh hưởng của các khối DSP đến bài toán phát hiện heart murmur. Hệ thống thực hiện đọc WAV, chuyển mono, chuẩn hóa, resampling, quantization, lọc dải thông, chia đoạn và trích xuất các biểu diễn thời gian–tần số gồm thống kê thời gian, Welch PSD, FFT, STFT và MFCC. Các vector đặc trưng được gộp theo bệnh nhân để tránh rò rỉ dữ liệu giữa các tập train/test.'),
-      para('Bản chính sử dụng toàn bộ public training release: 942 bệnh nhân và 3.163 WAV, trong đó 874 bệnh nhân có nhãn Absent/Present được dùng cho supervised learning. Patient-wise split gồm 611 train, 131 validation và 132 test. Full matrix 24 cấu hình cho thấy MLP + không filter + MFCC đạt macro-F1 cao nhất 0,693, còn SVM + không filter + hybrid có balanced accuracy cao nhất 0,664 trong cùng split. Benchmark preprocess cố định SVM + Butterworth + hybrid cho thấy 1 kHz + 16-bit là baseline nhanh nhất (85,8 s; macro-F1 0,615), còn 4 kHz + không quantization thêm đạt macro-F1 0,637 nhưng tốn 126,9 s. Matrix và robustness trên subset 100 patient được giữ như pilot để minh họa xu hướng khác biệt với kết quả full cohort.'),
+      para('Bản chính sử dụng toàn bộ public training release: 942 bệnh nhân và 3.163 WAV, trong đó 874 bệnh nhân có nhãn Absent/Present được dùng cho supervised learning. Patient-wise split gồm 611 train, 131 validation và 132 test. Full matrix 24 cấu hình cho thấy MLP + không filter + MFCC đạt macro-F1 cao nhất 0,693, còn SVM + không filter + hybrid có balanced accuracy cao nhất 0,664 trong cùng split. Một MobileNetV3-Small pretrained frozen được thêm như baseline phụ trên cùng split; FIR đạt accuracy 0,864, balanced accuracy 0,777 và macro-F1 0,784. Benchmark preprocess cố định SVM + Butterworth + hybrid cho thấy 1 kHz + 16-bit là baseline nhanh nhất (85,8 s; macro-F1 0,615), còn 4 kHz + không quantization thêm đạt macro-F1 0,637 nhưng tốn 126,9 s. Matrix và robustness trên subset 100 patient được giữ như pilot để minh họa xu hướng khác biệt với kết quả full cohort.'),
       para('Từ khóa: phonocardiogram, PCG, heart murmur, sampling, quantization, band-pass filter, FFT, PSD, STFT, SVM.'),
 
       heading('Mục lục', HeadingLevel.HEADING_1),
@@ -119,6 +119,7 @@ const doc = new Document({
       para('4. Matrix thực nghiệm — 4'),
       para('4.1. Full-cohort benchmark sampling/quantization — 5'),
       para('4.2. Full-data matrix model/filter/feature — 6'),
+      para('4.3. Pretrained MobileNet baseline — 7'),
       para('5. Robustness theo sampling, quantization và noise — 5'),
       para('6. Signal-level analysis và FE demo — 6'),
       para('7. Đánh giá và hạn chế — 7'),
@@ -157,7 +158,7 @@ const doc = new Document({
       table(['Nhóm', 'Thành phần'], [['Stats', 'Mean, standard deviation, RMS, skewness, kurtosis'], ['PSD', 'Welch band-power ratios và spectral entropy'], ['FFT', 'Ba peak frequency và magnitude chuẩn hóa'], ['STFT', 'Mean, std và quantiles của log magnitude spectrogram'], ['MFCC', 'Mean/std của 13 MFCC'], ['Hybrid', 'Kết hợp toàn bộ nhóm trên']], [2100, 7200]),
       caption('Bảng 2. Các biểu diễn được dùng trong matrix.'),
       heading('3.3. Classifier', HeadingLevel.HEADING_2),
-      para('Hai baseline được so sánh: SVM RBF với StandardScaler, probability=True và class_weight=balanced; MLPClassifier với hai hidden layers (128, 64), early stopping và seed cố định. SVM được chọn làm model demo vì ổn định hơn MLP trên subset nhỏ và có xác suất lớp để hiển thị trong FE.'),
+      para('Hai baseline cổ điển được so sánh: SVM RBF với StandardScaler, probability=True và class_weight=balanced; MLPClassifier với hai hidden layers (128, 64), early stopping và seed cố định. Ngoài ra, MobileNetV3-Small pretrained với backbone frozen được chạy như baseline spectrogram nhẹ; SVM vẫn được chọn làm model demo vì ổn định hơn MLP và CNN trên CPU, đồng thời có xác suất lớp để hiển thị trong FE.'),
 
       heading('4. Matrix thực nghiệm', HeadingLevel.HEADING_1),
       para('Matrix chính gồm 24 cấu hình: filter ∈ {none, Butterworth, FIR}, feature ∈ {PSD, MFCC, STFT, hybrid}, model ∈ {SVM, MLP}. Metric chính là macro-F1 vì hai lớp không cân bằng hoàn toàn; balanced accuracy, precision, recall và confusion matrix được lưu kèm.'),
@@ -180,6 +181,12 @@ const doc = new Document({
       table(['Model', 'Filter', 'Feature', 'Accuracy', 'Balanced acc.', 'Macro-F1'], [['MLP', 'None', 'MFCC', '0,848', '0,657', '0,693'], ['MLP', 'None', 'Hybrid', '0,841', '0,625', '0,654'], ['SVM', 'None', 'Hybrid', '0,750', '0,664', '0,648'], ['SVM', 'FIR', 'Hybrid', '0,765', '0,646', '0,644'], ['SVM', 'None', 'MFCC', '0,742', '0,659', '0,642'], ['SVM', 'FIR', 'MFCC', '0,758', '0,628', '0,628'], ['SVM', 'Butterworth', 'Hybrid', '0,742', '0,618', '0,615']], [1500, 1700, 1900, 1300, 1700, 1300]),
       caption('Bảng 5. Top full-data configurations theo Macro-F1; test = 132 bệnh nhân.'),
       para('Không filter cho kết quả tốt hơn trong split này; MFCC giúp MLP đạt Macro-F1 cao nhất, trong khi SVM + none + hybrid có balanced accuracy cao nhất. Tuy nhiên confusion matrix của MLP + none + MFCC vẫn cho thấy lớp Present khó nhận diện (9/27 đúng), vì vậy không nên chọn model chỉ theo Accuracy. Đây là kết luận trên một seed, cần lặp nhiều seed trước khi khẳng định ưu thế.'),
+
+      heading('4.3. Pretrained MobileNet baseline', HeadingLevel.HEADING_2),
+      para('MobileNetV3-Small dùng ImageNet pretrained weights, backbone frozen, input là log-STFT 128×128 từ tối đa hai cửa sổ 3 giây mỗi recording và mean aggregation về patient-level. Thí nghiệm vẫn là bài toán binary Absent/Present, giữ target fs = 1 kHz, quantization = 16-bit, seed 42 và split 611/131/132; chỉ thay filter để so sánh công bằng với DSP matrix.'),
+      table(['Filter', 'Accuracy', 'Balanced acc.', 'Macro-F1'], [['None', '0,841', '0,749', '0,752'], ['Butterworth', '0,826', '0,698', '0,712'], ['FIR', '0,864', '0,777', '0,784']], [3000, 2000, 2200, 1800]),
+      caption('Bảng 6. MobileNetV3-Small pretrained frozen, binary test = 132 bệnh nhân.'),
+      para('FIR là cấu hình MobileNet tốt nhất trong binary benchmark theo cả Accuracy, Balanced Accuracy và Macro-F1. Đây là kết quả bổ sung để đối chiếu representation spectrogram với feature DSP thủ công; không dùng CNN thay thế cho câu hỏi chính về filter/feature của DSP.'),
 
       heading('5. Robustness theo sampling, quantization và noise', HeadingLevel.HEADING_1),
       para('Để tách ảnh hưởng của từng yếu tố DSP, hệ thống cố định SVM + Butterworth + hybrid và chạy thêm 10 điều kiện trên pilot subset 100 bệnh nhân. Mỗi điều kiện dùng cùng patient split, seed và metric với matrix chính; các số liệu ở mục này chỉ dùng để minh họa xu hướng robustness, còn benchmark toàn cohort nằm ở mục 4.1.'),
@@ -205,11 +212,11 @@ const doc = new Document({
       bullet('Public training release có 942 bệnh nhân; đây chưa phải toàn bộ 1.568 subjects của dataset ban đầu.'),
       bullet('Segmentation annotations được parse và lưu trong manifest nhưng pipeline hiện tại chưa dùng để cắt riêng S1, systole, S2 và diastole.'),
       bullet('Kết quả là proof-of-concept cho môn DSP, không được diễn giải thành hiệu năng chẩn đoán y khoa.'),
-      bullet('MLP và SVM là baseline CPU; nghiên cứu chưa đánh giá CNN hoặc calibration trên cohort lớn.'),
+      bullet('MobileNet là baseline transfer-learning frozen; chưa fine-tune toàn backbone, calibration xác suất hoặc đánh giá nhiều seed trên CNN.'),
 
       heading('8. Kết luận và hướng phát triển', HeadingLevel.HEADING_1),
-      para('Đồ án đã xây dựng và kiểm chứng một pipeline PCG end-to-end có thể tái lập từ dữ liệu WAV tới prediction và FE visualization. Trên full public training release, full matrix cho thấy MLP + không filter + MFCC đạt Macro-F1 0,693, còn SVM + không filter + hybrid đạt balanced accuracy 0,664 trong split hiện tại. Preprocess benchmark cho thấy 1 kHz + 16-bit là lựa chọn nhanh nhất; 4 kHz + không quantization thêm đạt Macro-F1 0,637 với chi phí thời gian khoảng 1,48×. Các kết quả cần được kiểm chứng thêm bằng nhiều seed vì lớp Present vẫn khó nhận diện.'),
-      para('Các bước phát triển tiếp theo gồm: lặp lại đánh giá với nhiều patient-wise seeds, sử dụng segmentation để tạo cycle-level feature, bổ sung confidence interval/calibration, và chỉ khi cần mới so sánh với spectrogram CNN hoặc mở rộng sang toàn bộ subjects ngoài public training release.'),
+      para('Đồ án đã xây dựng và kiểm chứng một pipeline PCG end-to-end có thể tái lập từ dữ liệu WAV tới prediction và FE visualization. Trên full public training release, full matrix cho thấy MLP + không filter + MFCC đạt Macro-F1 0,693, còn SVM + không filter + hybrid đạt balanced accuracy 0,664 trong split hiện tại. MobileNetV3-Small pretrained frozen đạt Macro-F1 0,784 với FIR trên cùng binary split, nhưng được giữ như baseline phụ. Preprocess benchmark cho thấy 1 kHz + 16-bit là lựa chọn nhanh nhất; 4 kHz + không quantization thêm đạt Macro-F1 0,637 với chi phí thời gian khoảng 1,48×. Các kết quả cần được kiểm chứng thêm bằng nhiều seed vì lớp Present vẫn khó nhận diện.'),
+      para('Các bước phát triển tiếp theo gồm: lặp lại đánh giá với nhiều patient-wise seeds, sử dụng segmentation để tạo cycle-level feature, bổ sung confidence interval/calibration, và nếu cần thì fine-tune hoặc mở rộng MobileNet trên GPU và các subjects ngoài public training release.'),
 
       heading('Tài liệu tham khảo', HeadingLevel.HEADING_1),
       para('[1] PhysioNet, “CirCor DigiScope Dataset,” version 1.0.3. '),
