@@ -28,7 +28,7 @@ from pcg_dsp.io import parse_patient_file
 from pcg_dsp.service import analyze_recording, load_model_bundle
 
 
-DEFAULT_MODEL = "artifacts/runs/svm_butterworth_hybrid/model.joblib"
+DEFAULT_MODEL = "artifacts/runs/svm_none_hybrid/model.joblib"
 DEMO_DATA_ROOT = PROJECT_ROOT / "data" / "circor-heart-sound" / "1.0.3" / "training_data"
 
 # Curated model bundles for the demo.  The paths are relative to the project
@@ -36,8 +36,8 @@ DEMO_DATA_ROOT = PROJECT_ROOT / "data" / "circor-heart-sound" / "1.0.3" / "train
 # machine.  We intentionally omit fixture/noise-only runs from the polished
 # demo; those remain available for notebook experiments.
 MODEL_PRESETS = {
-    "Recommended · SVM + Butterworth + Hybrid": "artifacts/runs/svm_butterworth_hybrid/model.joblib",
-    "SVM · No filter + Hybrid": "artifacts/runs/svm_none_hybrid/model.joblib",
+    "Recommended · SVM + No filter + Hybrid": "artifacts/runs/svm_none_hybrid/model.joblib",
+    "SVM · Butterworth + Hybrid (training baseline)": "artifacts/runs/svm_butterworth_hybrid/model.joblib",
     "SVM · FIR + Hybrid": "artifacts/runs/svm_fir_hybrid/model.joblib",
     "SVM · Butterworth + MFCC": "artifacts/runs/svm_butterworth_mfcc/model.joblib",
     "SVM · Butterworth + PSD": "artifacts/runs/svm_butterworth_psd/model.joblib",
@@ -245,6 +245,8 @@ with st.sidebar:
         model_relpath = available_presets[selected_preset]
         model_path = str(PROJECT_ROOT / model_relpath)
         st.caption(f"Bundle: `{model_relpath}`")
+        if selected_preset.startswith("Recommended"):
+            st.caption("Selected as the strongest classical DSP preset by balanced accuracy; no model is correct on every recording.")
     else:
         model_path = DEFAULT_MODEL
         st.error("No trained model bundles were found in `artifacts/runs`. Run the training notebook first.")
