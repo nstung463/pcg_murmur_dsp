@@ -140,7 +140,8 @@ opening the browser Downloads directory. The project-data option also provides
 a bundled demo recording. The user can choose a trained SVM/MLP model preset
 from a dropdown, run the saved model bundle, and view the raw/processed waveform, FFT
 magnitude, Welch PSD, filter frequency response, log-STFT spectrogram, class
-probabilities, confidence, and DSP configuration used. Sampling rate,
+probabilities, confidence, ground truth for labelled project recordings, and DSP
+configuration used. Sampling rate,
 quantization, filter, and controlled noise preview can be changed in the
 sidebar. The A/B comparison runs the training baseline next to the selected
 DSP preview, and the result can be downloaded as JSON. The selected model's

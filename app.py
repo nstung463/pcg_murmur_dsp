@@ -23,6 +23,7 @@ from scipy import signal
 from scipy.io import wavfile
 
 from pcg_dsp.dsp import design_filter
+from pcg_dsp.io import parse_patient_file
 from pcg_dsp.service import analyze_recording, load_model_bundle
 
 
@@ -64,6 +65,19 @@ def _list_project_wavs() -> list[Path]:
     if not DEMO_DATA_ROOT.exists():
         return []
     return sorted(DEMO_DATA_ROOT.glob("*.wav"))
+
+
+def _ground_truth_for_wav(wav_path: str | Path) -> str | None:
+    """Read the patient-level reference label for a bundled CirCor WAV."""
+    path = Path(wav_path)
+    patient_id = path.name.split("_", 1)[0]
+    patient_file = path.parent / f"{patient_id}.txt"
+    if not patient_file.exists():
+        return None
+    try:
+        return parse_patient_file(patient_file).label
+    except (OSError, UnicodeError, ValueError):
+        return None
 
 
 def _plot_waveforms(result: dict):
@@ -206,7 +220,7 @@ with st.sidebar:
     if previous_input_mode is not None and previous_input_mode != input_mode:
         # Do not accidentally analyze a file from the previous source after
         # the user switches between project data and external upload.
-        for key in ("input_bytes", "filename", "input_source"):
+        for key in ("input_bytes", "filename", "input_source", "input_path"):
             st.session_state.pop(key, None)
     st.session_state["_input_mode"] = input_mode
     if input_mode == "Upload external WAV":
@@ -215,6 +229,7 @@ with st.sidebar:
             st.session_state["input_bytes"] = uploaded.getvalue()
             st.session_state["filename"] = uploaded.name
             st.session_state["input_source"] = "uploaded WAV"
+            st.session_state.pop("input_path", None)
     else:
         st.caption(f"Project data folder: `{DEMO_DATA_ROOT}`")
         selected_local_wav = st.selectbox(
@@ -227,10 +242,12 @@ with st.sidebar:
             st.session_state["input_bytes"] = selected_local_wav.read_bytes()
             st.session_state["filename"] = selected_local_wav.name
             st.session_state["input_source"] = "project data WAV"
+            st.session_state["input_path"] = str(selected_local_wav)
         if demo_wav is not None and st.button("Use bundled demo recording", icon=":material/play_circle:"):
             st.session_state["input_bytes"] = demo_wav.read_bytes()
             st.session_state["filename"] = demo_wav.name
             st.session_state["input_source"] = "bundled demo WAV"
+            st.session_state["input_path"] = str(demo_wav)
     if st.session_state.get("input_source") in {"bundled demo WAV", "project data WAV"}:
         st.caption(f"Selected file: `{st.session_state.get('filename', 'not selected')}`")
 
@@ -319,6 +336,25 @@ if result:
     metric_columns[2].metric("Duration", f"{result['duration_seconds']:.2f} s")
     metric_columns[3].metric("Segments", result["n_segments"])
     metric_columns[4].metric("Features", result["feature_count"])
+
+    ground_truth = None
+    input_path = st.session_state.get("input_path")
+    if input_path:
+        ground_truth = _ground_truth_for_wav(input_path)
+    if ground_truth in {"Absent", "Present"}:
+        is_correct = result["label"] == ground_truth
+        truth_columns = st.columns(2)
+        truth_columns[0].metric("Ground truth", ground_truth)
+        truth_columns[1].metric("Evaluation", "Correct" if is_correct else "Incorrect")
+        if is_correct:
+            st.success(f"Prediction matches the dataset label: {ground_truth}.")
+        else:
+            st.error(f"Prediction does not match the dataset label: {ground_truth}.")
+    elif st.session_state.get("input_source") == "uploaded WAV":
+        st.info("Ground truth unavailable for an external upload; only the model prediction is shown.")
+    elif ground_truth == "Unknown":
+        st.info("Dataset label is Unknown, so this recording is not counted as correct/incorrect.")
+
     if np.isfinite(confidence):
         if confidence < 0.65:
             st.warning(f"Prediction is uncertain ({top_label}: {confidence:.1%}). Use the signal views as evidence, not as a diagnosis.")
@@ -332,7 +368,7 @@ if result:
     baseline_result = st.session_state.get("baseline_analysis")
     if baseline_result:
         st.subheader("A/B comparison: training baseline vs selected DSP")
-        st.caption("Baseline is the configuration used to train the SVM. Selected is an inference-time DSP preview; the model is not retrained between the two runs.")
+        st.caption("Baseline is the configuration used to train the selected model. Selected is an inference-time DSP preview; the model is not retrained between the two runs.")
         comparison_columns = st.columns(2)
         baseline_label, baseline_confidence = _top_confidence(baseline_result)
         with comparison_columns[0].container(border=True):
@@ -340,12 +376,16 @@ if result:
             st.metric("Prediction", baseline_label)
             st.caption(f"{baseline_result['config']['dsp']['target_fs']} Hz · {baseline_result['config']['dsp']['quantization_bits']}-bit · {baseline_result['config']['dsp']['filter']}")
             st.caption(f"Top confidence: {baseline_confidence:.1%}" if np.isfinite(baseline_confidence) else "No probability output")
+            if ground_truth in {"Absent", "Present"}:
+                st.caption(f"Against ground truth: {'Correct' if baseline_label == ground_truth else 'Incorrect'}")
         with comparison_columns[1].container(border=True):
             st.markdown("**Selected DSP preview**")
             st.metric("Prediction", result["label"])
             selected_bits = result["config"]["dsp"].get("quantization_bits")
             st.caption(f"{result['target_fs']} Hz · {selected_bits if selected_bits is not None else 'none'}-bit · {result['config']['dsp']['filter']}")
             st.caption(f"Top confidence: {confidence:.1%}" if np.isfinite(confidence) else "No probability output")
+            if ground_truth in {"Absent", "Present"}:
+                st.caption(f"Against ground truth: {'Correct' if result['label'] == ground_truth else 'Incorrect'}")
         labels = sorted(set(baseline_result["probabilities"]) | set(result["probabilities"]))
         probability_comparison = pd.DataFrame(
             {
