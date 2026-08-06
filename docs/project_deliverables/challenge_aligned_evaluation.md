@@ -23,7 +23,9 @@ such as M2D used a separate public split and different windowing/aggregation.
 Therefore this track supports a transparent research comparison, but it does
 not reproduce the official hidden-test leaderboard.
 
-Smoke test on the 100-patient verified subset (SVM + Butterworth + hybrid,
-seed 42) produced weighted accuracy `0.672`, UAR `0.494`, macro AUROC `0.771`
-and macro AUPRC `0.604`. These values are pilot diagnostics, not final
-full-cohort claims.
+The full public training release (942 patients; 612/94/236 split) with SVM +
+Butterworth + hybrid features produced weighted accuracy `0.622`, UAR `0.597`,
+macro AUROC `0.791`, macro AUPRC `0.585` and macro-F1 `0.596`. The complete
+machine-readable result is stored in
+`challenge_aligned_full_metrics.json`. These are public-split results, not
+official hidden-test leaderboard scores.
