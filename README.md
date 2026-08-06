@@ -134,11 +134,11 @@ $env:PYTHONPATH = "$PWD\src"
 .\.venv\Scripts\python -m streamlit run app.py
 ```
 
-The UI accepts a WAV upload, or lets the user select any WAV already present
-in the project's `training_data` folder without opening the browser Downloads
-directory. It also provides a bundled demo recording, lets the user choose a
-trained SVM/MLP model preset from a dropdown, runs the saved model bundle, and
-shows the raw/processed waveform, FFT
+The UI first asks for one recording source: upload an external WAV, or select
+any WAV already present in the project's `training_data` folder without
+opening the browser Downloads directory. The project-data option also provides
+a bundled demo recording. The user can choose a trained SVM/MLP model preset
+from a dropdown, run the saved model bundle, and view the raw/processed waveform, FFT
 magnitude, Welch PSD, filter frequency response, log-STFT spectrogram, class
 probabilities, confidence, and DSP configuration used. Sampling rate,
 quantization, filter, and controlled noise preview can be changed in the

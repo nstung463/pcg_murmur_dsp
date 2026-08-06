@@ -194,27 +194,43 @@ with st.sidebar:
     else:
         model_path = DEFAULT_MODEL
         st.error("No trained model bundles were found in `artifacts/runs`. Run the training notebook first.")
-    uploaded = st.file_uploader("Upload a heart-sound WAV", type=["wav"])
-    if uploaded is not None:
-        st.session_state["input_bytes"] = uploaded.getvalue()
-        st.session_state["filename"] = uploaded.name
-        st.session_state["input_source"] = "uploaded WAV"
-    if project_wavs:
+    input_modes = ["Project data", "Upload external WAV"] if project_wavs else ["Upload external WAV"]
+    input_mode = st.radio(
+        "Recording source",
+        input_modes,
+        index=0,
+        horizontal=True,
+        help="Choose exactly one source for the recording to analyze.",
+    )
+    previous_input_mode = st.session_state.get("_input_mode")
+    if previous_input_mode is not None and previous_input_mode != input_mode:
+        # Do not accidentally analyze a file from the previous source after
+        # the user switches between project data and external upload.
+        for key in ("input_bytes", "filename", "input_source"):
+            st.session_state.pop(key, None)
+    st.session_state["_input_mode"] = input_mode
+    if input_mode == "Upload external WAV":
+        uploaded = st.file_uploader("Choose a WAV file", type=["wav"])
+        if uploaded is not None:
+            st.session_state["input_bytes"] = uploaded.getvalue()
+            st.session_state["filename"] = uploaded.name
+            st.session_state["input_source"] = "uploaded WAV"
+    else:
         st.caption(f"Project data folder: `{DEMO_DATA_ROOT}`")
         selected_local_wav = st.selectbox(
-            "Choose WAV from project data",
+            "Choose a recording",
             project_wavs,
             format_func=lambda path: path.name,
             help="Select a recording already stored in data/circor-heart-sound/.../training_data.",
         )
-        if st.button("Use selected project WAV", icon=":material/folder_open:"):
+        if st.button("Use selected recording", icon=":material/folder_open:"):
             st.session_state["input_bytes"] = selected_local_wav.read_bytes()
             st.session_state["filename"] = selected_local_wav.name
             st.session_state["input_source"] = "project data WAV"
-    if demo_wav is not None and st.button("Use demo recording", icon=":material/play_circle:"):
-        st.session_state["input_bytes"] = demo_wav.read_bytes()
-        st.session_state["filename"] = demo_wav.name
-        st.session_state["input_source"] = "bundled demo WAV"
+        if demo_wav is not None and st.button("Use bundled demo recording", icon=":material/play_circle:"):
+            st.session_state["input_bytes"] = demo_wav.read_bytes()
+            st.session_state["filename"] = demo_wav.name
+            st.session_state["input_source"] = "bundled demo WAV"
     if st.session_state.get("input_source") in {"bundled demo WAV", "project data WAV"}:
         st.caption(f"Selected file: `{st.session_state.get('filename', 'not selected')}`")
 
