@@ -134,12 +134,15 @@ $env:PYTHONPATH = "$PWD\src"
 .\.venv\Scripts\python -m streamlit run app.py
 ```
 
-The UI accepts a WAV upload, plays the recording, runs the saved model bundle,
-and shows the raw/processed waveform, FFT magnitude, Welch PSD, log-STFT
-spectrogram, class probabilities, and DSP configuration used. Sampling rate,
+The UI accepts a WAV upload or the bundled demo recording, plays each DSP
+stage, runs the saved model bundle, and shows the raw/processed waveform, FFT
+magnitude, Welch PSD, filter frequency response, log-STFT spectrogram, class
+probabilities, confidence, and DSP configuration used. Sampling rate,
 quantization, filter, and controlled noise preview can be changed in the
-sidebar. The selected model's feature mode remains fixed so inference stays
-compatible with the trained estimator.
+sidebar. The A/B comparison runs the training baseline next to the selected
+DSP preview, and the result can be downloaded as JSON. The selected model's
+feature mode remains fixed so inference stays compatible with the trained
+estimator.
 
 Run the unit tests:
 

@@ -365,7 +365,7 @@ function addMetric(slide, x, y, value, label, color = C.teal) {
 // 16. FE demo
 {
   const slide = pptx.addSlide(); addTitle(slide, 'FE demo và kịch bản trình diễn', '15 · Demo');
-  const steps = [['1', 'Upload WAV', 'Chọn một recording PCG', C.teal], ['2', 'Analyze', 'Chạy đúng DSP pipeline', C.orange], ['3', 'Inspect', 'Waveform · FFT · PSD · STFT', C.purple], ['4', 'Decide', 'Label + probabilities', C.mint]];
+  const steps = [['1', 'Start', 'Use demo WAV or upload', C.teal], ['2', 'Analyze', 'Run baseline + selected DSP', C.orange], ['3', 'Compare', 'Audio · A/B · filter response', C.purple], ['4', 'Explain', 'Probability + confidence + JSON', C.mint]];
   steps.forEach((s, i) => {
     const x = 0.75 + i * 3.02;
     slide.addShape(pptx.ShapeType.rect, { x, y: 1.65, w: 2.55, h: 1.55, rectRadius: 0.06, fill: { color: C.white }, line: { color: C.line, width: 1 } });
@@ -378,7 +378,7 @@ function addMetric(slide, x, y, value, label, color = C.teal) {
   addImage(slide, 'circor_100_signal_report/signal_report.png', 0.75, 3.75, 5.95, 2.55);
   slide.addShape(pptx.ShapeType.rect, { x: 7.05, y: 3.75, w: 5.15, h: 2.55, rectRadius: 0.08, fill: { color: C.navy2 }, line: { color: C.navy2 } });
   addText(slide, 'Kịch bản nói', 7.4, 4.05, 4.3, 0.3, { fontSize: 21, bold: true, color: C.white });
-  addBullets(slide, ['“Đây là raw PCG và các biểu diễn sau DSP.”', '“Tôi đổi 16-bit sang 8-bit để kiểm tra robustness.”', '“Model đã train trước; FE chỉ inference, không train lại.”', '“Đây là research prototype, không phải diagnosis.”'], 7.4, 4.62, 4.3, 1.25, 15, 'E6FFFB');
+  addBullets(slide, ['“Đây là raw PCG và các biểu diễn sau DSP.”', '“Tôi đổi fs/bit depth/filter để xem A/B probability thay đổi.”', '“Filter response cho thấy dải PCG 25–400 Hz được giữ lại.”', '“Đây là research prototype, không phải diagnosis.”'], 7.4, 4.62, 4.3, 1.25, 15, 'E6FFFB');
   addFooter(slide, 16);
 }
 

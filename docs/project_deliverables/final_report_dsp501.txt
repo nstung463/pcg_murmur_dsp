@@ -319,16 +319,18 @@ accuracy.
 
 
 6.2. Streamlit demo
-FE nằm trong app.py và gọi cùng service inference với CLI. Người dùng upload WAV, chọn sampling rate,
-quantization, filter và noise preview; sau đó xem audio player, waveform, FFT, PSD, STFT, class probabilities
-và cấu hình DSP được dùng. Model mặc định là svm_butterworth_hybrid/model.joblib.
+FE nằm trong app.py và gọi cùng service inference với CLI. Người dùng upload WAV hoặc chọn bundled demo
+recording, chọn sampling rate, quantization, filter và noise preview; sau đó xem audio player, waveform, FFT,
+PSD, filter frequency response, STFT, class probabilities, confidence và cấu hình DSP được dùng. Demo có A/B
+comparison giữa training baseline và selected DSP, đồng thời cho phép tải analysis JSON. Model mặc định là
+svm_butterworth_hybrid/model.joblib.
 Lệnh chạy demo:
 .\.venv\Scripts\python.exe -m streamlit run app.py
 
-Khi trình bày, demo nên đi theo flow: upload một WAV → nghe/xem Raw → chọn target fs và xem waveform
-After resample → bật quantization và xem After quantization → bật band-pass và xem After filter → chỉ ra năng
-lượng trên FFT/PSD → xem STFT → đổi 16-bit sang 8-bit hoặc bật pink noise → phân tích thay đổi probability.
-Đây là minh họa robustness, không phải phép chẩn đoán.
+Khi trình bày, demo nên đi theo flow: bấm Use demo recording hoặc upload WAV → chạy training baseline →
+đổi target fs/bit depth/filter → chạy A/B comparison → nghe các stage → đọc waveform, FFT/PSD và filter
+response với dải 25–400 Hz → xem STFT và confidence → tải analysis JSON. Đây là minh họa robustness,
+không phải phép chẩn đoán.
 
 7. Đánh giá và hạn chế
     ●   Benchmark full-cohort có test set 132 bệnh nhân nhưng mới dùng một patient-wise split seed 42; khoảng
@@ -339,8 +341,6 @@ lượng trên FFT/PSD → xem STFT → đổi 16-bit sang 8-bit hoặc bật pi
     ●   Kết quả là proof-of-concept cho môn DSP, không được diễn giải thành hiệu năng chẩn đoán y khoa.
     ●   MobileNet là baseline transfer-learning frozen; chưa fine-tune toàn backbone, calibration xác suất hoặc
         đánh giá nhiều seed trên CNN.
-
-
 
 
                                                            Trang 9

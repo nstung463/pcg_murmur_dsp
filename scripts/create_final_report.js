@@ -202,10 +202,10 @@ const doc = new Document({
       image('circor_100_signal_report/signal_report.png', 720, 410),
       caption('Hình 3. Ví dụ signal-level report trên một WAV CirCor thật.'),
       heading('6.2. Streamlit demo', HeadingLevel.HEADING_2),
-      para('FE nằm trong app.py và gọi cùng service inference với CLI. Người dùng upload WAV, chọn sampling rate, quantization, filter và noise preview; sau đó xem audio player, waveform, FFT, PSD, STFT, class probabilities và cấu hình DSP được dùng. Model mặc định là svm_butterworth_hybrid/model.joblib.'),
+      para('FE nằm trong app.py và gọi cùng service inference với CLI. Người dùng upload WAV hoặc chọn bundled demo recording, chọn sampling rate, quantization, filter và noise preview; sau đó xem audio player, waveform, FFT, PSD, filter frequency response, STFT, class probabilities, confidence và cấu hình DSP được dùng. Demo có A/B comparison giữa training baseline và selected DSP, đồng thời cho phép tải analysis JSON. Model mặc định là svm_butterworth_hybrid/model.joblib.'),
       para('Lệnh chạy demo:'),
       para('.\\.venv\\Scripts\\python.exe -m streamlit run app.py', { size: 20, color: colors.navy }),
-      para('Khi trình bày, demo nên đi theo flow: upload một WAV → nghe/xem Raw → chọn target fs và xem waveform After resample → bật quantization và xem After quantization → bật band-pass và xem After filter → chỉ ra năng lượng trên FFT/PSD → xem STFT → đổi 16-bit sang 8-bit hoặc bật pink noise → phân tích thay đổi probability. Đây là minh họa robustness, không phải phép chẩn đoán.'),
+      para('Khi trình bày, demo nên đi theo flow: bấm Use demo recording hoặc upload WAV → chạy training baseline → đổi target fs/bit depth/filter → chạy A/B comparison → nghe các stage → đọc waveform, FFT/PSD và filter response với dải 25–400 Hz → xem STFT và confidence → tải analysis JSON. Đây là minh họa robustness, không phải phép chẩn đoán.'),
 
       heading('7. Đánh giá và hạn chế', HeadingLevel.HEADING_1),
       bullet('Benchmark full-cohort có test set 132 bệnh nhân nhưng mới dùng một patient-wise split seed 42; khoảng tin cậy và độ ổn định theo nhiều seed chưa được tính.'),
