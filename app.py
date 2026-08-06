@@ -23,7 +23,7 @@ import yaml
 from scipy import signal
 from scipy.io import wavfile
 
-from pcg_dsp.dsp import design_filter
+from pcg_dsp.dsp import design_filter, resample_signal
 from pcg_dsp.io import parse_patient_file
 from pcg_dsp.service import analyze_recording, load_model_bundle
 
@@ -196,7 +196,7 @@ def _top_confidence(result: dict) -> tuple[str, float]:
 
 def _wav_bytes(signal: np.ndarray, sample_rate: int, normalize: bool = True) -> bytes:
     """Encode a float waveform as a browser-playable PCM WAV."""
-    values = np.asarray(signal, dtype=np.float32)
+    values = np.nan_to_num(np.asarray(signal, dtype=np.float32), nan=0.0, posinf=0.0, neginf=0.0)
     if normalize:
         peak = float(np.max(np.abs(values))) if values.size else 0.0
         if peak > 1e-9:
@@ -205,6 +205,18 @@ def _wav_bytes(signal: np.ndarray, sample_rate: int, normalize: bool = True) -> 
     buffer = io.BytesIO()
     wavfile.write(buffer, int(sample_rate), (values * 32767.0).astype(np.int16))
     return buffer.getvalue()
+
+
+def _browser_playback_signal(values: np.ndarray, sample_rate: int, playback_rate: int = 16000) -> tuple[np.ndarray, int]:
+    """Convert preview audio to a browser-friendly sample rate.
+
+    The DSP pipeline may intentionally run at 1 kHz, but some browser WAV
+    decoders do not reliably play such an unusual rate. This conversion is
+    only for listening; plots, features and predictions use the processing-rate arrays.
+    """
+    if int(sample_rate) == playback_rate:
+        return np.asarray(values, dtype=np.float32), playback_rate
+    return resample_signal(np.asarray(values, dtype=np.float32), int(sample_rate), playback_rate), playback_rate
 
 
 st.set_page_config(page_title="PCG DSP Demo", page_icon=":material/graphic_eq:", layout="wide")
@@ -423,8 +435,9 @@ if result:
     selected_stage = st.selectbox("Audio preview", list(audio_stages), key="audio_stage")
     normalize_playback = st.checkbox("Normalize playback volume", value=True, key="normalize_playback")
     preview_signal, preview_fs, preview_description = audio_stages[selected_stage]
-    st.audio(_wav_bytes(preview_signal, preview_fs, normalize_playback), format="audio/wav")
-    st.caption(f"{preview_description} · {len(preview_signal) / preview_fs:.2f} s · {preview_fs} Hz")
+    browser_signal, browser_fs = _browser_playback_signal(preview_signal, preview_fs)
+    st.audio(_wav_bytes(browser_signal, browser_fs, normalize_playback), format="audio/wav")
+    st.caption(f"{preview_description} · {len(preview_signal) / preview_fs:.2f} s · processing: {preview_fs} Hz · playback: {browser_fs} Hz")
 
     st.pyplot(_plot_waveforms(result), clear_figure=True)
     st.pyplot(_plot_frequency_views(result), clear_figure=True)
