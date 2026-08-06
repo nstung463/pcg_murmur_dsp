@@ -16,3 +16,6 @@ sampling/quantization benchmark, lightweight CNN baseline, aggregation and
 threshold ablations, partial fine-tuning comparison, and fixed-split seed
 stability. CNN results use all 874 labeled patients but at most two windows per
 recording; the MobileNet backbone is frozen in the recommended configuration.
+The optional challenge-aligned track is documented in
+`challenge_aligned_evaluation.md` and must not be mixed with the binary DSP
+matrix or interpreted as a hidden-test leaderboard submission.

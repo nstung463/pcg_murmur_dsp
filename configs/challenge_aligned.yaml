@@ -1,0 +1,39 @@
+# Challenge-aligned reference run.
+# This is a public-data approximation of the PhysioNet protocol, not the
+# hidden-test leaderboard evaluation. Keep all three murmur labels and split
+# patients (not recordings) before fitting the classifier.
+data:
+  root: data/circor-heart-sound/1.0.3/training_data
+  label_column: murmur
+  include_unknown: true
+  max_patients: null
+  skip_invalid_patients: true
+split:
+  seed: 42
+  train_size: 0.65
+  validation_size: 0.10
+dsp:
+  target_fs: 1000
+  quantization_bits: 16
+  filter: butterworth
+  low_hz: 25
+  high_hz: 400
+  order: 4
+  fir_taps: 129
+  wavelet_denoise: false
+  segment_seconds: 3.0
+  segment_hop_seconds: 1.5
+features:
+  mode: hybrid
+  n_mfcc: 13
+  n_fft: 512
+  hop_length: 128
+noise:
+  enabled: false
+  snr_db: 10
+  kind: white
+model:
+  kind: svm
+  seed: 42
+experiments:
+  output_dir: artifacts/challenge_aligned
