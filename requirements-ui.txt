@@ -1,2 +1,5 @@
 -r requirements.txt
 streamlit>=1.40
+# Optional CNN preset used by the MobileNetV3-Small FE integration.
+torch>=2.0
+torchvision>=0.15

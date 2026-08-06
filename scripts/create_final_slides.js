@@ -114,7 +114,7 @@ function addMetric(slide, x, y, value, label, color = C.teal) {
   addText(slide, 'DSP501 · FINAL PROJECT', 0.7, 0.72, 5.4, 0.3, { fontSize: 13, bold: true, color: '8FE3D8', charSpacing: 1.5 });
   addText(slide, 'Robust PCG Murmur\nDetection with DSP', 0.72, 1.5, 5.0, 1.6, { fontFace: 'Georgia', fontSize: 31, bold: true, color: C.white, breakLine: true });
   addText(slide, 'Nghiên cứu ảnh hưởng của sampling, quantization, filtering và time–frequency features trên tín hiệu phonocardiogram.', 0.72, 3.35, 5.2, 1.0, { fontSize: 18, color: 'D7E5EE' });
-  addText(slide, 'CirCor DigiScope · SVM/MLP · Streamlit demo', 0.72, 5.85, 5.6, 0.3, { fontSize: 14, color: '8FE3D8', bold: true });
+  addText(slide, 'CirCor DigiScope · SVM/MLP/MobileNet · Streamlit demo', 0.72, 5.85, 5.6, 0.3, { fontSize: 14, color: '8FE3D8', bold: true });
   slide.addShape(pptx.ShapeType.rect, { x: 5.92, y: 0.88, w: 6.82, h: 5.32, fill: { color: C.white }, line: { color: C.orange, width: 1.2 } });
   addImage(slide, 'circor_100_signal_report/signal_report.png', 6.08, 1.02, 6.5, 5.0, 8);
   slide.addShape(pptx.ShapeType.rect, { x: 5.92, y: 6.35, w: 6.82, h: 0.65, fill: { color: C.orange }, line: { color: C.orange } });
@@ -227,7 +227,7 @@ function addMetric(slide, x, y, value, label, color = C.teal) {
   addText(slide, 'STFT tạo ma trận 2D time–frequency; đây là cầu nối tự nhiên sang Image Processing.', 1.08, 5.05, 4.65, 0.62, { fontSize: 15, color: 'D7E5EE', italic: true });
   const feats = [['Stats', 'RMS · skew · kurtosis'], ['PSD', 'Band powers · entropy'], ['FFT', 'Peak frequencies'], ['MFCC', '13 coefficients'], ['Hybrid', 'Kết hợp toàn bộ'],];
   feats.forEach((f, i) => card(slide, 6.8 + (i % 2) * 2.85, 1.55 + Math.floor(i / 2) * 1.4, 2.55, 1.05, f[0], f[1], [C.teal, C.orange, C.purple, C.mint, C.navy2][i]));
-  addText(slide, 'MobileNet pretrained frozen được giữ như baseline phụ; SVM/MLP vẫn là core DSP.', 6.85, 5.85, 5.2, 0.45, { fontSize: 16, color: C.orange, bold: true });
+  addText(slide, 'MobileNet pretrained frozen có thể chọn trong FE; SVM/MLP vẫn là core DSP.', 6.85, 5.85, 5.2, 0.45, { fontSize: 16, color: C.orange, bold: true });
   addFooter(slide, 7);
 }
 
@@ -388,7 +388,7 @@ function addMetric(slide, x, y, value, label, color = C.teal) {
   slide.background = { color: C.navy };
   addText(slide, 'KẾT LUẬN', 0.75, 0.65, 4.5, 0.3, { fontSize: 13, bold: true, color: '8FE3D8', charSpacing: 1.5 });
   addText(slide, 'DSP front-end quyết định\nđộ bền của hệ thống.', 0.75, 1.25, 6.0, 1.3, { fontSize: 36, bold: true, color: C.white, breakLine: true });
-  addBullets(slide, ['Full benchmark: 1 kHz nhanh nhất; 4 kHz + none đạt Macro-F1 0.637 trong split hiện tại.', 'MobileNet frozen + FIR đạt binary Macro-F1 0.784; giữ như baseline phụ.', 'Pipeline, model bundle và Streamlit FE đã chạy end-to-end.', 'Bước tiếp theo: nhiều seed, segmentation-aware features, calibration.'], 0.82, 3.15, 6.2, 2.25, 18, 'D7E5EE');
+  addBullets(slide, ['Full benchmark: 1 kHz nhanh nhất; 4 kHz + none đạt Macro-F1 0.637 trong split hiện tại.', 'MobileNet frozen + FIR đạt binary Macro-F1 0.784 và đã có preset trong FE.', 'Pipeline, model bundle và Streamlit FE đã chạy end-to-end.', 'Bước tiếp theo: nhiều seed, segmentation-aware features, calibration.'], 0.82, 3.15, 6.2, 2.25, 18, 'D7E5EE');
   slide.addShape(pptx.ShapeType.rect, { x: 7.65, y: 1.25, w: 4.6, h: 3.95, rectRadius: 0.08, fill: { color: '17324D' }, line: { color: '2C526F', width: 1 } });
   addText(slide, 'Hạn chế cần nói rõ', 8.05, 1.65, 3.8, 0.3, { fontSize: 21, bold: true, color: 'FDBA74' });
   addBullets(slide, ['Public training release 942 bệnh nhân', 'Test set 132 bệnh nhân · seed 42', 'Chưa clinical validation', 'Chưa cycle-level segmentation'], 8.05, 2.25, 3.5, 1.75, 16, 'D7E5EE');

@@ -23,6 +23,7 @@ import yaml
 from scipy import signal
 from scipy.io import wavfile
 
+from pcg_dsp.cnn import analyze_mobilenet_recording, load_mobilenet_bundle
 from pcg_dsp.dsp import design_filter, resample_signal
 from pcg_dsp.io import parse_patient_file
 from pcg_dsp.service import analyze_recording, load_model_bundle
@@ -36,6 +37,7 @@ DEMO_DATA_ROOT = PROJECT_ROOT / "data" / "circor-heart-sound" / "1.0.3" / "train
 # machine.  We intentionally omit fixture/noise-only runs from the polished
 # demo; those remain available for notebook experiments.
 MODEL_PRESETS = {
+    "Best benchmark · MobileNetV3-Small + FIR": "artifacts/cnn_matrix_pretrained/fir/model.pt",
     "Recommended · SVM + No filter + Hybrid": "artifacts/runs/svm_none_hybrid/model.joblib",
     "SVM · Butterworth + Hybrid (training baseline)": "artifacts/runs/svm_butterworth_hybrid/model.joblib",
     "SVM · FIR + Hybrid": "artifacts/runs/svm_fir_hybrid/model.joblib",
@@ -51,6 +53,12 @@ MODEL_PRESETS = {
 def _cached_model_bundle(model_path: str):
     """Cache the estimator so widget reruns do not reload joblib from disk."""
     return load_model_bundle(model_path)
+
+
+@st.cache_resource(show_spinner=False)
+def _cached_mobilenet_bundle(model_path: str):
+    """Cache the MobileNet checkpoint and model construction across reruns."""
+    return load_mobilenet_bundle(model_path)
 
 
 def _find_demo_wav() -> Path | None:
@@ -234,7 +242,7 @@ with st.sidebar:
     }
     if available_presets:
         preset_labels = list(available_presets)
-        default_label = next(iter(MODEL_PRESETS))
+        default_label = next((label for label in MODEL_PRESETS if label.startswith("Recommended")), next(iter(MODEL_PRESETS)))
         default_index = preset_labels.index(default_label) if default_label in preset_labels else 0
         selected_preset = st.selectbox(
             "Model preset",
@@ -299,14 +307,21 @@ with st.sidebar:
 
     config = None
     model = None
+    cnn_bundle = None
+    model_kind = "mobilenet" if Path(model_path).suffix.lower() == ".pt" else "classical"
     if model_exists:
         try:
-            model, config = _cached_model_bundle(model_path)
+            if model_kind == "mobilenet":
+                cnn_bundle, config = _cached_mobilenet_bundle(model_path)
+            else:
+                model, config = _cached_model_bundle(model_path)
         except Exception as exc:
             st.error(f"Cannot load model: {exc}")
 
     if config:
         dsp = config["dsp"]
+        if model_kind == "mobilenet":
+            st.caption("MobileNet benchmark contract: 1 kHz · 16-bit · FIR · log-STFT 128×128. Other DSP settings are inference-time ablations, not retrained CNN variants.")
         bit_options = [None, 8, 12, 16]
         bit_labels = {None: "Original / none", 8: "8-bit", 12: "12-bit", 16: "16-bit"}
         with st.form("analysis_controls", border=False):
@@ -332,7 +347,8 @@ with st.sidebar:
         compare_baseline = False
 
 active_bytes = st.session_state.get("input_bytes")
-if analyze_clicked and active_bytes is not None and model is not None and config is not None:
+inference_ready = (model_kind == "mobilenet" and cnn_bundle is not None) or (model_kind == "classical" and model is not None)
+if analyze_clicked and active_bytes is not None and inference_ready and config is not None:
     overrides = {
         "dsp": {"target_fs": target_fs, "quantization_bits": bits, "filter": filter_name},
         "noise": {"enabled": noise_kind != "none", "kind": noise_kind, "snr_db": snr_db},
@@ -349,11 +365,17 @@ if analyze_clicked and active_bytes is not None and model is not None and config
     with st.status("Running DSP pipeline and inference...", expanded=True) as status:
         try:
             st.write("Analyzing selected DSP configuration")
-            selected_result = analyze_recording(active_bytes, model, config, overrides)
+            if model_kind == "mobilenet":
+                selected_result = analyze_mobilenet_recording(active_bytes, cnn_bundle, config, overrides)
+            else:
+                selected_result = analyze_recording(active_bytes, model, config, overrides)
             baseline_result = None
             if compare_baseline:
                 st.write("Running the training-baseline comparison")
-                baseline_result = analyze_recording(active_bytes, model, config, baseline_overrides)
+                if model_kind == "mobilenet":
+                    baseline_result = analyze_mobilenet_recording(active_bytes, cnn_bundle, config, baseline_overrides)
+                else:
+                    baseline_result = analyze_recording(active_bytes, model, config, baseline_overrides)
             st.session_state["analysis"] = selected_result
             st.session_state["baseline_analysis"] = baseline_result
             st.session_state["analysis_overrides"] = overrides
@@ -448,6 +470,7 @@ if result:
 
     export_payload = {
         "recording": filename,
+        "model": result.get("model_name", selected_preset if "selected_preset" in locals() else "classical"),
         "prediction": result["label"],
         "probabilities": result["probabilities"],
         "duration_seconds": result["duration_seconds"],

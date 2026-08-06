@@ -158,7 +158,7 @@ const doc = new Document({
       table(['Nhóm', 'Thành phần'], [['Stats', 'Mean, standard deviation, RMS, skewness, kurtosis'], ['PSD', 'Welch band-power ratios và spectral entropy'], ['FFT', 'Ba peak frequency và magnitude chuẩn hóa'], ['STFT', 'Mean, std và quantiles của log magnitude spectrogram'], ['MFCC', 'Mean/std của 13 MFCC'], ['Hybrid', 'Kết hợp toàn bộ nhóm trên']], [2100, 7200]),
       caption('Bảng 2. Các biểu diễn được dùng trong matrix.'),
       heading('3.3. Classifier', HeadingLevel.HEADING_2),
-      para('Hai baseline cổ điển được so sánh: SVM RBF với StandardScaler, probability=True và class_weight=balanced; MLPClassifier với hai hidden layers (128, 64), early stopping và seed cố định. Ngoài ra, MobileNetV3-Small pretrained với backbone frozen được chạy như baseline spectrogram nhẹ; SVM vẫn được chọn làm model demo vì ổn định hơn MLP và CNN trên CPU, đồng thời có xác suất lớp để hiển thị trong FE.'),
+      para('Hai baseline cổ điển được so sánh: SVM RBF với StandardScaler, probability=True và class_weight=balanced; MLPClassifier với hai hidden layers (128, 64), early stopping và seed cố định. Ngoài ra, MobileNetV3-Small pretrained với backbone frozen được chạy như baseline spectrogram nhẹ và hiện có thể chọn trực tiếp trong FE khi checkpoint tồn tại.'),
 
       heading('4. Matrix thực nghiệm', HeadingLevel.HEADING_1),
       para('Matrix chính gồm 24 cấu hình: filter ∈ {none, Butterworth, FIR}, feature ∈ {PSD, MFCC, STFT, hybrid}, model ∈ {SVM, MLP}. Metric chính là macro-F1 vì hai lớp không cân bằng hoàn toàn; balanced accuracy, precision, recall và confusion matrix được lưu kèm.'),
@@ -202,7 +202,7 @@ const doc = new Document({
       image('circor_100_signal_report/signal_report.png', 720, 410),
       caption('Hình 3. Ví dụ signal-level report trên một WAV CirCor thật.'),
       heading('6.2. Streamlit demo', HeadingLevel.HEADING_2),
-      para('FE nằm trong app.py và gọi cùng service inference với CLI. Người dùng upload WAV hoặc chọn bundled demo recording, chọn sampling rate, quantization, filter và noise preview; sau đó xem audio player, waveform, FFT, PSD, filter frequency response, STFT, class probabilities, confidence và cấu hình DSP được dùng. Demo có A/B comparison giữa training baseline và selected DSP, đồng thời cho phép tải analysis JSON. Model mặc định là svm_butterworth_hybrid/model.joblib.'),
+      para('FE nằm trong app.py và gọi cùng service inference với CLI. Người dùng upload WAV hoặc chọn bundled demo recording, chọn model preset SVM/MLP hoặc MobileNetV3-Small, chọn sampling rate, quantization, filter và noise preview; sau đó xem audio player, waveform, FFT, PSD, filter frequency response, STFT, class probabilities, confidence và cấu hình DSP được dùng. Demo có A/B comparison giữa training baseline và selected DSP, đồng thời cho phép tải analysis JSON. Preset SVM + no filter + hybrid là mặc định DSP; MobileNetV3-Small + FIR là preset benchmark tùy chọn.'),
       para('Lệnh chạy demo:'),
       para('.\\.venv\\Scripts\\python.exe -m streamlit run app.py', { size: 20, color: colors.navy }),
       para('Khi trình bày, demo nên đi theo flow: bấm Use demo recording hoặc upload WAV → chạy training baseline → đổi target fs/bit depth/filter → chạy A/B comparison → nghe các stage → đọc waveform, FFT/PSD và filter response với dải 25–400 Hz → xem STFT và confidence → tải analysis JSON. Đây là minh họa robustness, không phải phép chẩn đoán.'),
@@ -212,10 +212,10 @@ const doc = new Document({
       bullet('Public training release có 942 bệnh nhân; đây chưa phải toàn bộ 1.568 subjects của dataset ban đầu.'),
       bullet('Segmentation annotations được parse và lưu trong manifest nhưng pipeline hiện tại chưa dùng để cắt riêng S1, systole, S2 và diastole.'),
       bullet('Kết quả là proof-of-concept cho môn DSP, không được diễn giải thành hiệu năng chẩn đoán y khoa.'),
-      bullet('MobileNet là baseline transfer-learning frozen; chưa fine-tune toàn backbone, calibration xác suất hoặc đánh giá nhiều seed trên CNN.'),
+      bullet('MobileNet là baseline transfer-learning frozen và đã được nối vào FE như preset spectrogram tùy chọn; chưa fine-tune toàn backbone, calibration xác suất hoặc đánh giá nhiều seed trên CNN.'),
 
       heading('8. Kết luận và hướng phát triển', HeadingLevel.HEADING_1),
-      para('Đồ án đã xây dựng và kiểm chứng một pipeline PCG end-to-end có thể tái lập từ dữ liệu WAV tới prediction và FE visualization. Trên full public training release, full matrix cho thấy MLP + không filter + MFCC đạt Macro-F1 0,693, còn SVM + không filter + hybrid đạt balanced accuracy 0,664 trong split hiện tại. MobileNetV3-Small pretrained frozen đạt Macro-F1 0,784 với FIR trên cùng binary split, nhưng được giữ như baseline phụ. Preprocess benchmark cho thấy 1 kHz + 16-bit là lựa chọn nhanh nhất; 4 kHz + không quantization thêm đạt Macro-F1 0,637 với chi phí thời gian khoảng 1,48×. Các kết quả cần được kiểm chứng thêm bằng nhiều seed vì lớp Present vẫn khó nhận diện.'),
+      para('Đồ án đã xây dựng và kiểm chứng một pipeline PCG end-to-end có thể tái lập từ dữ liệu WAV tới prediction và FE visualization. Trên full public training release, full matrix cho thấy MLP + không filter + MFCC đạt Macro-F1 0,693, còn SVM + không filter + hybrid đạt balanced accuracy 0,664 trong split hiện tại. MobileNetV3-Small pretrained frozen đạt Macro-F1 0,784 với FIR trên cùng binary split và đã được tích hợp như preset FE tùy chọn. Preprocess benchmark cho thấy 1 kHz + 16-bit là lựa chọn nhanh nhất; 4 kHz + không quantization thêm đạt Macro-F1 0,637 với chi phí thời gian khoảng 1,48×. Các kết quả cần được kiểm chứng thêm bằng nhiều seed vì lớp Present vẫn khó nhận diện.'),
       para('Các bước phát triển tiếp theo gồm: lặp lại đánh giá với nhiều patient-wise seeds, sử dụng segmentation để tạo cycle-level feature, bổ sung confidence interval/calibration, và nếu cần thì fine-tune hoặc mở rộng MobileNet trên GPU và các subjects ngoài public training release.'),
 
       heading('Tài liệu tham khảo', HeadingLevel.HEADING_1),

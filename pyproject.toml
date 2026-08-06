@@ -25,7 +25,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0"]
-ui = ["streamlit>=1.40"]
+ui = ["streamlit>=1.40", "torch>=2.0", "torchvision>=0.15"]
 
 [project.scripts]
 pcg-dsp = "pcg_dsp.cli:main"
