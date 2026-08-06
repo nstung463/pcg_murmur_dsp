@@ -85,7 +85,7 @@ def _render_evaluation_card(prediction: str, ground_truth: str | None, confidenc
     """Render an immediately readable prediction-vs-truth verdict."""
     if ground_truth in {"Absent", "Present"}:
         is_correct = prediction == ground_truth
-        verdict = "CORRECT / ĐÚNG" if is_correct else "INCORRECT / SAI"
+        verdict = "CORRECT" if is_correct else "INCORRECT"
         icon = "✓" if is_correct else "✕"
         color = "#166534" if is_correct else "#b91c1c"
         background = "#f0fdf4" if is_correct else "#fef2f2"
@@ -94,7 +94,7 @@ def _render_evaluation_card(prediction: str, ground_truth: str | None, confidenc
         st.markdown(
             f"""
             <div style="border:2px solid {border}; background:{background}; border-radius:12px; padding:18px 20px; margin:12px 0 18px 0;">
-              <div style="font-size:0.78rem; letter-spacing:0.08em; color:{color}; font-weight:700;">PREDICTION CHECK / KIỂM TRA DỰ ĐOÁN</div>
+              <div style="font-size:0.78rem; letter-spacing:0.08em; color:{color}; font-weight:700;">PREDICTION CHECK</div>
               <div style="font-size:1.65rem; line-height:1.25; color:{color}; font-weight:800; margin:5px 0 8px 0;">{icon}&nbsp; {verdict}</div>
               <div style="font-size:1rem; color:#1f2937;">Model prediction: <b>{html.escape(prediction)}</b>&nbsp;&nbsp;|&nbsp;&nbsp; Dataset ground truth: <b>{html.escape(ground_truth)}</b></div>
               <div style="font-size:0.9rem; color:#4b5563; margin-top:6px;">{detail} Top confidence: <b>{confidence:.1%}</b>.</div>
@@ -103,7 +103,7 @@ def _render_evaluation_card(prediction: str, ground_truth: str | None, confidenc
             unsafe_allow_html=True,
         )
     elif ground_truth == "Unknown":
-        st.info("GROUND TRUTH UNKNOWN / CHƯA CÓ NHÃN: recording is not counted as correct or incorrect.")
+        st.info("GROUND TRUTH UNKNOWN: recording is not counted as correct or incorrect.")
     else:
         st.info("GROUND TRUTH UNAVAILABLE: external uploads can be predicted, but cannot be scored without a reference label.")
 
@@ -413,7 +413,7 @@ if result:
         st.bar_chart(probability_comparison)
 
     st.subheader("Listen to DSP stages")
-    st.caption("Mỗi lựa chọn là cùng một recording sau một layer DSP. Playback được normalize riêng để dễ nghe; waveform/metrics vẫn dùng giá trị xử lý thật.")
+    st.caption("Each option is the same recording after one DSP layer. Playback is normalized separately for listening; waveforms and metrics use the actual processed values.")
     audio_stages = {
         "Raw WAV": (result["raw_signal"], result["source_fs"], "Original PCM at source sample rate"),
         "After resample": (result["resampled_signal"], result["target_fs"], f"Resampled to {result['target_fs']} Hz"),
