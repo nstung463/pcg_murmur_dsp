@@ -1,0 +1,22 @@
+{
+  "protocol": "public CirCor training release, patient-wise 65/10/25 split, seed 42",
+  "model": "MLP + Butterworth + hybrid features",
+  "n_patients": 942,
+  "n_train": 612,
+  "n_validation": 94,
+  "n_test": 236,
+  "labels": ["Absent", "Present", "Unknown"],
+  "accuracy": 0.75,
+  "balanced_accuracy": 0.4129066186,
+  "macro_f1": 0.4289988493,
+  "weighted_accuracy": 0.4644444444,
+  "uar": 0.4129066186,
+  "auroc_macro_ovr": 0.7440181461,
+  "auprc_macro_ovr": 0.5405946980,
+  "confusion_matrix": [
+    [168, 3, 3],
+    [38, 7, 0],
+    [15, 0, 2]
+  ],
+  "note": "Public-split result; not directly comparable to the official hidden-test leaderboard or M2D without matching cohort and protocol."
+}
