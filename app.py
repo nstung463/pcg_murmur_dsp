@@ -6,6 +6,7 @@ from pathlib import Path
 import sys
 import io
 import json
+import html
 
 # Make `python -m streamlit run app.py` work directly from the project root,
 # even when the package has not been installed in editable mode.
@@ -78,6 +79,33 @@ def _ground_truth_for_wav(wav_path: str | Path) -> str | None:
         return parse_patient_file(patient_file).label
     except (OSError, UnicodeError, ValueError):
         return None
+
+
+def _render_evaluation_card(prediction: str, ground_truth: str | None, confidence: float) -> None:
+    """Render an immediately readable prediction-vs-truth verdict."""
+    if ground_truth in {"Absent", "Present"}:
+        is_correct = prediction == ground_truth
+        verdict = "CORRECT / ĐÚNG" if is_correct else "INCORRECT / SAI"
+        icon = "✓" if is_correct else "✕"
+        color = "#166534" if is_correct else "#b91c1c"
+        background = "#f0fdf4" if is_correct else "#fef2f2"
+        border = "#86efac" if is_correct else "#fca5a5"
+        detail = "Prediction matches the labelled dataset." if is_correct else "Model prediction does not match the labelled dataset."
+        st.markdown(
+            f"""
+            <div style="border:2px solid {border}; background:{background}; border-radius:12px; padding:18px 20px; margin:12px 0 18px 0;">
+              <div style="font-size:0.78rem; letter-spacing:0.08em; color:{color}; font-weight:700;">PREDICTION CHECK / KIỂM TRA DỰ ĐOÁN</div>
+              <div style="font-size:1.65rem; line-height:1.25; color:{color}; font-weight:800; margin:5px 0 8px 0;">{icon}&nbsp; {verdict}</div>
+              <div style="font-size:1rem; color:#1f2937;">Model prediction: <b>{html.escape(prediction)}</b>&nbsp;&nbsp;|&nbsp;&nbsp; Dataset ground truth: <b>{html.escape(ground_truth)}</b></div>
+              <div style="font-size:0.9rem; color:#4b5563; margin-top:6px;">{detail} Top confidence: <b>{confidence:.1%}</b>.</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+    elif ground_truth == "Unknown":
+        st.info("GROUND TRUTH UNKNOWN / CHƯA CÓ NHÃN: recording is not counted as correct or incorrect.")
+    else:
+        st.info("GROUND TRUTH UNAVAILABLE: external uploads can be predicted, but cannot be scored without a reference label.")
 
 
 def _plot_waveforms(result: dict):
@@ -341,19 +369,7 @@ if result:
     input_path = st.session_state.get("input_path")
     if input_path:
         ground_truth = _ground_truth_for_wav(input_path)
-    if ground_truth in {"Absent", "Present"}:
-        is_correct = result["label"] == ground_truth
-        truth_columns = st.columns(2)
-        truth_columns[0].metric("Ground truth", ground_truth)
-        truth_columns[1].metric("Evaluation", "Correct" if is_correct else "Incorrect")
-        if is_correct:
-            st.success(f"Prediction matches the dataset label: {ground_truth}.")
-        else:
-            st.error(f"Prediction does not match the dataset label: {ground_truth}.")
-    elif st.session_state.get("input_source") == "uploaded WAV":
-        st.info("Ground truth unavailable for an external upload; only the model prediction is shown.")
-    elif ground_truth == "Unknown":
-        st.info("Dataset label is Unknown, so this recording is not counted as correct/incorrect.")
+    _render_evaluation_card(result["label"], ground_truth, confidence)
 
     if np.isfinite(confidence):
         if confidence < 0.65:
