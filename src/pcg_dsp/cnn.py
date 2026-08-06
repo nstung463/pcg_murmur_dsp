@@ -185,6 +185,7 @@ def analyze_mobilenet_recording(
     return {
         "label": prediction,
         "probabilities": {"Absent": float(window_mean[0]), "Present": float(window_mean[1])},
+        "window_probabilities": probabilities,
         "source_fs": source_fs,
         "target_fs": target_fs,
         "duration_seconds": float(len(raw) / source_fs),
@@ -206,3 +207,40 @@ def analyze_mobilenet_recording(
         "model_name": "MobileNetV3-Small",
         "cnn_windows": len(segments),
     }
+
+
+def analyze_mobilenet_patient(
+    recording_paths: list[str | Path],
+    bundle: dict[str, Any],
+    config: dict[str, Any],
+    dsp_overrides: dict[str, Any] | None = None,
+    patient_id: str | None = None,
+) -> dict[str, Any]:
+    """Aggregate MobileNet window probabilities across every patient recording."""
+    if not recording_paths:
+        raise ValueError("No recordings were provided for patient-level inference")
+    recording_results = [
+        analyze_mobilenet_recording(path, bundle, config, dsp_overrides)
+        for path in recording_paths
+    ]
+    window_probabilities = np.concatenate(
+        [result["window_probabilities"] for result in recording_results],
+        axis=0,
+    )
+    patient_probability = np.mean(window_probabilities, axis=0)
+    threshold = float(bundle["metadata"]["threshold"])
+    prediction = "Present" if float(patient_probability[1]) >= threshold else "Absent"
+    representative = copy.deepcopy(recording_results[0])
+    representative.update(
+        {
+            "label": prediction,
+            "probabilities": {"Absent": float(patient_probability[0]), "Present": float(patient_probability[1])},
+            "window_probabilities": window_probabilities,
+            "n_segments": int(sum(result["n_segments"] for result in recording_results)),
+            "duration_seconds": float(sum(result["duration_seconds"] for result in recording_results)),
+            "recording_count": len(recording_results),
+            "patient_id": patient_id,
+            "aggregation_level": "patient",
+        }
+    )
+    return representative

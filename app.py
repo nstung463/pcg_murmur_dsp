@@ -23,10 +23,10 @@ import yaml
 from scipy import signal
 from scipy.io import wavfile
 
-from pcg_dsp.cnn import analyze_mobilenet_recording, load_mobilenet_bundle
+from pcg_dsp.cnn import analyze_mobilenet_patient, analyze_mobilenet_recording, load_mobilenet_bundle
 from pcg_dsp.dsp import design_filter, resample_signal
 from pcg_dsp.io import parse_patient_file
-from pcg_dsp.service import analyze_recording, load_model_bundle
+from pcg_dsp.service import analyze_patient_recordings, analyze_recording, load_model_bundle
 
 
 DEFAULT_MODEL = "artifacts/runs/svm_none_hybrid/model.joblib"
@@ -87,6 +87,20 @@ def _ground_truth_for_wav(wav_path: str | Path) -> str | None:
         return parse_patient_file(patient_file).label
     except (OSError, UnicodeError, ValueError):
         return None
+
+
+def _patient_recordings_for_wav(wav_path: str | Path) -> tuple[str | None, list[Path]]:
+    """Resolve all labelled recordings belonging to the selected patient."""
+    path = Path(wav_path)
+    patient_id = path.name.split("_", 1)[0]
+    patient_file = path.parent / f"{patient_id}.txt"
+    if not patient_file.exists():
+        return None, []
+    try:
+        patient = parse_patient_file(patient_file)
+    except (OSError, UnicodeError, ValueError):
+        return None, []
+    return patient.patient_id, [recording.wav_path for recording in patient.recordings]
 
 
 def _render_evaluation_card(prediction: str, ground_truth: str | None, confidence: float) -> None:
@@ -301,6 +315,22 @@ with st.sidebar:
     if st.session_state.get("input_source") in {"bundled demo WAV", "project data WAV"}:
         st.caption(f"Selected file: `{st.session_state.get('filename', 'not selected')}`")
 
+    patient_id = None
+    patient_recording_paths: list[Path] = []
+    evaluation_scope = "recording"
+    selected_input_path = st.session_state.get("input_path")
+    if selected_input_path:
+        patient_id, patient_recording_paths = _patient_recordings_for_wav(selected_input_path)
+    if patient_recording_paths:
+        evaluation_scope = st.radio(
+            "Evaluation level",
+            ["Patient-level (benchmark)", "Recording-level preview"],
+            index=0,
+            horizontal=True,
+            help="Patient-level aggregates all AV/MV/PV/TV recordings to match the benchmark protocol.",
+        )
+        st.caption(f"Patient `{patient_id}` · {len(patient_recording_paths)} recordings will be aggregated.")
+
     model_exists = Path(model_path).exists()
     if not model_exists:
         st.warning("Model file not found. Train a model or update the path.")
@@ -365,15 +395,24 @@ if analyze_clicked and active_bytes is not None and inference_ready and config i
     with st.status("Running DSP pipeline and inference...", expanded=True) as status:
         try:
             st.write("Analyzing selected DSP configuration")
-            if model_kind == "mobilenet":
+            use_patient_level = evaluation_scope.startswith("Patient-level") and bool(patient_recording_paths)
+            if model_kind == "mobilenet" and use_patient_level:
+                selected_result = analyze_mobilenet_patient(patient_recording_paths, cnn_bundle, config, overrides, patient_id)
+            elif model_kind == "mobilenet":
                 selected_result = analyze_mobilenet_recording(active_bytes, cnn_bundle, config, overrides)
+            elif use_patient_level:
+                selected_result = analyze_patient_recordings(patient_recording_paths, model, config, overrides, patient_id)
             else:
                 selected_result = analyze_recording(active_bytes, model, config, overrides)
             baseline_result = None
             if compare_baseline:
                 st.write("Running the training-baseline comparison")
-                if model_kind == "mobilenet":
+                if model_kind == "mobilenet" and use_patient_level:
+                    baseline_result = analyze_mobilenet_patient(patient_recording_paths, cnn_bundle, config, baseline_overrides, patient_id)
+                elif model_kind == "mobilenet":
                     baseline_result = analyze_mobilenet_recording(active_bytes, cnn_bundle, config, baseline_overrides)
+                elif use_patient_level:
+                    baseline_result = analyze_patient_recordings(patient_recording_paths, model, config, baseline_overrides, patient_id)
                 else:
                     baseline_result = analyze_recording(active_bytes, model, config, baseline_overrides)
             st.session_state["analysis"] = selected_result
@@ -388,6 +427,11 @@ if analyze_clicked and active_bytes is not None and inference_ready and config i
 result = st.session_state.get("analysis")
 if result:
     filename = st.session_state.get("filename", "recording.wav")
+    if result.get("aggregation_level") == "patient":
+        st.info(
+            f"Patient-level prediction: aggregated {result.get('recording_count', 0)} recordings "
+            f"for patient {result.get('patient_id', 'selected patient')}. The plots show the selected representative recording."
+        )
     st.caption(f"Active recording: `{filename}` · {st.session_state.get('input_source', 'selected WAV')}")
     if st.session_state.get("audio_bytes"):
         st.audio(st.session_state["audio_bytes"], format="audio/wav")

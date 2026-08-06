@@ -150,7 +150,9 @@ feature mode remains fixed so inference stays compatible with the trained
 estimator. When `artifacts/cnn_matrix_pretrained/fir/model.pt` is present, the
 model dropdown also exposes the benchmark MobileNetV3-Small + FIR checkpoint;
 the CNN path requires the torch/torchvision dependencies from
-`requirements-ui.txt`.
+`requirements-ui.txt`. For project recordings, `Patient-level (benchmark)` is
+the default evaluation scope: all recordings for the selected patient are
+aggregated before prediction. External uploads use recording-level inference.
 
 Run the unit tests:
 

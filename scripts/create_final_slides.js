@@ -378,7 +378,7 @@ function addMetric(slide, x, y, value, label, color = C.teal) {
   addImage(slide, 'circor_100_signal_report/signal_report.png', 0.75, 3.75, 5.95, 2.55);
   slide.addShape(pptx.ShapeType.rect, { x: 7.05, y: 3.75, w: 5.15, h: 2.55, rectRadius: 0.08, fill: { color: C.navy2 }, line: { color: C.navy2 } });
   addText(slide, 'Kịch bản nói', 7.4, 4.05, 4.3, 0.3, { fontSize: 21, bold: true, color: C.white });
-  addBullets(slide, ['“Đây là raw PCG và các biểu diễn sau DSP.”', '“Tôi đổi fs/bit depth/filter để xem A/B probability thay đổi.”', '“Filter response cho thấy dải PCG 25–400 Hz được giữ lại.”', '“Đây là research prototype, không phải diagnosis.”'], 7.4, 4.62, 4.3, 1.25, 15, 'E6FFFB');
+  addBullets(slide, ['“Patient-level mặc định gom các vị trí AV/MV/PV/TV trước khi predict.”', '“Đây là raw PCG và các biểu diễn sau DSP.”', '“Tôi đổi fs/bit depth/filter để xem A/B probability thay đổi.”', '“Đây là research prototype, không phải diagnosis.”'], 7.4, 4.62, 4.3, 1.25, 15, 'E6FFFB');
   addFooter(slide, 16);
 }
 

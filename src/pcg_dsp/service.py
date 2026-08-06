@@ -108,8 +108,53 @@ def analyze_recording(
         "stft_magnitude": stft_magnitude,
         "n_segments": len(segments),
         "feature_count": int(features.shape[1]),
+        "feature_matrix": features,
         "config": config,
     }
+
+
+def analyze_patient_recordings(
+    recording_paths: list[str | Path],
+    model: Any,
+    config: dict,
+    dsp_overrides: dict | None = None,
+    patient_id: str | None = None,
+) -> dict[str, Any]:
+    """Aggregate classical-model inference across all recordings of one patient.
+
+    Training averages segment features within each recording and then averages
+    those recording vectors at patient level. This helper mirrors that contract
+    while retaining the first recording's signal arrays for visualization.
+    """
+    if not recording_paths:
+        raise ValueError("No recordings were provided for patient-level inference")
+    recording_results = [analyze_recording(path, model, config, dsp_overrides) for path in recording_paths]
+    patient_features = np.mean(
+        np.stack([np.mean(result["feature_matrix"], axis=0) for result in recording_results], axis=0),
+        axis=0,
+    ).reshape(1, -1)
+    prediction = str(model.predict(patient_features)[0])
+    probabilities: dict[str, float] = {}
+    if hasattr(model, "predict_proba"):
+        probabilities = {
+            str(name): float(probability)
+            for name, probability in zip(model.classes_, model.predict_proba(patient_features)[0])
+        }
+    representative = copy.deepcopy(recording_results[0])
+    representative.update(
+        {
+            "label": prediction,
+            "probabilities": probabilities,
+            "n_segments": int(sum(result["n_segments"] for result in recording_results)),
+            "feature_count": int(patient_features.shape[1]),
+            "feature_matrix": patient_features,
+            "duration_seconds": float(sum(result["duration_seconds"] for result in recording_results)),
+            "recording_count": len(recording_results),
+            "patient_id": patient_id,
+            "aggregation_level": "patient",
+        }
+    )
+    return representative
 
 
 def analyze_file(
