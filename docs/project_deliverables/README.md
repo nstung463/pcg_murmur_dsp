@@ -19,3 +19,5 @@ recording; the MobileNet backbone is frozen in the recommended configuration.
 The optional challenge-aligned track is documented in
 `challenge_aligned_evaluation.md` and must not be mixed with the binary DSP
 matrix or interpreted as a hidden-test leaderboard submission.
+The standardized binary DSP plus pretrained-CNN comparison is documented in
+`benchmark_matrix_standardized.md`.
