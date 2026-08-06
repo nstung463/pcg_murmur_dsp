@@ -7,6 +7,7 @@ import sys
 import io
 import json
 import html
+import importlib
 
 # Make `python -m streamlit run app.py` work directly from the project root,
 # even when the package has not been installed in editable mode.
@@ -23,7 +24,15 @@ import yaml
 from scipy import signal
 from scipy.io import wavfile
 
-from pcg_dsp.cnn import analyze_mobilenet_patient, analyze_mobilenet_recording, load_mobilenet_bundle
+# Streamlit can rerun this script while retaining an older imported module in
+# ``sys.modules``.  Reload the CNN module only when the patient-level helper is
+# missing so a code update is picked up without requiring a full reinstall.
+import pcg_dsp.cnn as _cnn
+if not hasattr(_cnn, "analyze_mobilenet_patient"):
+    _cnn = importlib.reload(_cnn)
+analyze_mobilenet_patient = _cnn.analyze_mobilenet_patient
+analyze_mobilenet_recording = _cnn.analyze_mobilenet_recording
+load_mobilenet_bundle = _cnn.load_mobilenet_bundle
 from pcg_dsp.dsp import design_filter, resample_signal
 from pcg_dsp.io import parse_patient_file
 from pcg_dsp.service import analyze_patient_recordings, analyze_recording, load_model_bundle
