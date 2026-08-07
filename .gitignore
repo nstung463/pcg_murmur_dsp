@@ -4,5 +4,6 @@ __pycache__/
 *.pyc
 data/
 artifacts/
+!artifacts/runs/*/model.joblib
 *.egg-info/
 build/
